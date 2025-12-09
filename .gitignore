@@ -27,7 +27,7 @@ qiskit-cert/
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
-*.ipynb
+# *.ipynb  # Commented out - we want to track our educational notebooks!
 
 # Testing
 .pytest_cache/
