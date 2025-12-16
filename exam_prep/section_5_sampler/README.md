@@ -228,6 +228,25 @@ qc.measure_all()
 # ✅ sampler.run([(qc,)])  # OK!
 ```
 
+### 🔄 Sampler vs Estimator PUB Comparison
+
+| Aspect | Sampler PUB | Estimator PUB |
+|--------|-------------|---------------|
+| **Format** | `(circuit, params, shots)` | `(circuit, observable, params, precision)` |
+| **Required** | circuit | circuit, observable |
+| **Measurements** | REQUIRED ✓ | NOT ALLOWED ✗ |
+| **Observable** | N/A | SparsePauliOp |
+| **Precision** | N/A | Optional float |
+| **Shots** | Optional int | N/A (uses precision) |
+
+```python
+# SAMPLER: (circuit, parameter_values, shots)
+sampler.run([(qc_with_meas, [0.5], 2048)])
+
+# ESTIMATOR: (circuit, observable, parameter_values, precision)
+estimator.run([(qc_no_meas, SparsePauliOp('ZZ'), [0.5], 0.01)])
+```
+
 ### 🎓 Exam Question Patterns - Sampler
 
 **Pattern 1: "What's the correct PUB format?"**

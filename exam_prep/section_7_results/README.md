@@ -257,6 +257,83 @@ Got: result[0].data.c.get_counts() but wanted 'meas'
 □ Handling multiple circuits: Loop or multiple indices?
 ```
 
+---
+
+## ⚠️ EXAM CRITICAL: PUB Format Complete Reference
+
+**PUB = Primitive Unified Bloc** - The standard input format for primitives.
+
+### Sampler PUB Format
+
+**Format**: `(circuit, parameter_values, shots)`
+
+| Scenario | PUB Format | Example |
+|----------|------------|----------|
+| Basic circuit | `[(circuit,)]` | `sampler.run([(qc,)])` |
+| With parameters | `[(circuit, params)]` | `sampler.run([(qc, [0.5])])` |
+| Custom shots | `[(circuit, None, shots)]` | `sampler.run([(qc, None, 2048)])` |
+| All options | `[(circuit, params, shots)]` | `sampler.run([(qc, [0.5], 4096)])` |
+
+### Estimator PUB Format
+
+**Format**: `(circuit, observable, parameter_values, precision)`
+
+| Scenario | PUB Format | Example |
+|----------|------------|----------|
+| Basic | `[(circuit, observable)]` | `estimator.run([(qc, obs)])` |
+| With parameters | `[(circuit, observable, params)]` | `estimator.run([(qc, obs, [0.5])])` |
+| With precision | `[(circuit, observable, None, prec)]` | `estimator.run([(qc, obs, None, 0.01)])` |
+| All options | `[(circuit, observable, params, prec)]` | `estimator.run([(qc, obs, [0.5], 0.01)])` |
+
+### Side-by-Side Comparison
+
+```python
+# ═══════════════════════════════════════════════════════════════════
+#  SAMPLER PUB = (circuit, parameter_values, shots)
+# ═══════════════════════════════════════════════════════════════════
+pub_sampler = (circuit,)                    # Basic (trailing comma!)
+pub_sampler = (circuit, [0.5, 1.0])         # With params
+pub_sampler = (circuit, None, 2048)         # Custom shots
+pub_sampler = (circuit, [0.5], 4096)        # All options
+
+# REQUIREMENTS:
+# ✓ Circuit MUST have measurements
+# ✓ parameter_values is list matching circuit.parameters
+# ✓ shots is integer (default varies by backend)
+
+# ═══════════════════════════════════════════════════════════════════
+#  ESTIMATOR PUB = (circuit, observable, parameter_values, precision)
+# ═══════════════════════════════════════════════════════════════════
+pub_estimator = (circuit, observable)                    # Basic
+pub_estimator = (circuit, observable, [0.5, 1.0])        # With params
+pub_estimator = (circuit, observable, None, 0.01)        # With precision
+pub_estimator = (circuit, observable, [0.5], 0.01)       # All options
+
+# REQUIREMENTS:
+# ✓ Circuit MUST NOT have measurements
+# ✓ observable MUST be SparsePauliOp
+# ✓ parameter_values is list matching circuit.parameters
+# ✓ precision is float (target precision for result)
+```
+
+### Common PUB Mistakes
+
+```python
+# SAMPLER MISTAKES:
+❌ sampler.run([circuit])          # Not a tuple!
+❌ sampler.run([(circuit)])        # Missing trailing comma!
+❌ sampler.run([(circuit_no_meas,)]) # No measurements!
+✅ sampler.run([(circuit,)])       # Correct!
+
+# ESTIMATOR MISTAKES:
+❌ estimator.run([(circuit,)])     # Missing observable!
+❌ estimator.run([(circuit, 'ZZ')]) # String not SparsePauliOp!
+❌ estimator.run([(circuit_with_meas, obs)]) # Has measurements!
+✅ estimator.run([(circuit, SparsePauliOp('ZZ'))]) # Correct!
+```
+
+---
+
 ### Example 2: Estimator Result Extraction
 
 ```python

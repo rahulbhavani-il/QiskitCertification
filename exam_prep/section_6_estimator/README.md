@@ -275,6 +275,88 @@ qc.measure_all()
 ❌ estimator.run([(qc, SparsePauliOp('Z'))])  # ERROR!
 ```
 
+### ⚠️ EXAM CRITICAL: Estimator PUB Format Complete Reference
+
+**PUB = (circuit, observable, parameter_values, precision)**
+
+| Scenario | PUB Format | Example |
+|----------|------------|----------|
+| Basic circuit + observable | `[(circuit, observable)]` | `estimator.run([(qc, obs)])` |
+| With parameter values | `[(circuit, observable, params)]` | `estimator.run([(qc, obs, [0.5, 1.2])])` |
+| With precision | `[(circuit, observable, params, precision)]` | `estimator.run([(qc, obs, [0.5], 0.01)])` |
+| No params, with precision | `[(circuit, observable, None, precision)]` | `estimator.run([(qc, obs, None, 0.01)])` |
+| Multiple PUBs | `[(qc1, obs1), (qc2, obs2)]` | See below |
+
+**PUB Tuple Structure**:
+```python
+pub = (circuit, observable, parameter_values, precision)
+#       │         │              │               │
+#       │         │              │               └─ Optional: target precision (float)
+#       │         │              └─ Optional: list of parameter values
+#       │         └─ REQUIRED: SparsePauliOp observable
+#       └─ REQUIRED: QuantumCircuit (NO measurements!)
+```
+
+**Complete Examples**:
+```python
+from qiskit import QuantumCircuit
+from qiskit.primitives import StatevectorEstimator
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.circuit import Parameter
+
+# Example 1: Basic usage (circuit, observable)
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+obs = SparsePauliOp('ZZ')
+
+estimator = StatevectorEstimator()
+job = estimator.run([(qc, obs)])  # Basic PUB
+
+# Example 2: Parameterized circuit with values
+theta = Parameter('θ')
+qc_param = QuantumCircuit(1)
+qc_param.ry(theta, 0)
+
+pub = (qc_param, SparsePauliOp('Z'), [0.5])  # θ = 0.5
+job = estimator.run([pub])
+
+# Example 3: With custom precision (for hardware)
+pub = (qc, obs, None, 0.01)  # precision = 0.01
+job = estimator.run([pub])
+
+# Example 4: Multiple parameter sets (batch)
+theta_values = [[0.0], [0.5], [1.0], [1.5]]
+pubs = [(qc_param, SparsePauliOp('Z'), val) for val in theta_values]
+job = estimator.run(pubs)
+
+# Example 5: Multiple observables for same circuit
+observables = [SparsePauliOp('ZZ'), SparsePauliOp('XX'), SparsePauliOp('YY')]
+pubs = [(qc, obs) for obs in observables]
+job = estimator.run(pubs)
+```
+
+**Common PUB Mistakes for Estimator**:
+```python
+❌ WRONG: estimator.run([circuit])  # Missing observable!
+✅ RIGHT: estimator.run([(circuit, observable)])
+
+❌ WRONG: estimator.run([(circuit, 'ZZ')])  # String not SparsePauliOp!
+✅ RIGHT: estimator.run([(circuit, SparsePauliOp('ZZ'))])
+
+❌ WRONG: estimator.run([(circuit_with_measure, observable)])  # Has measurements!
+✅ RIGHT: Remove measurements from circuit
+
+❌ WRONG: estimator.run([(circuit, observable, 0.5)])  # params must be list!
+✅ RIGHT: estimator.run([(circuit, observable, [0.5])])
+```
+
+**Memory Aid: "COPPP" for Estimator PUB**
+- **C**ircuit (required, NO measurements)
+- **O**bservable (required, SparsePauliOp)
+- **P**arameters (optional, list of values)
+- **P**recision (optional, float)
+
 ### Multi-Observable Measurement
 
 ```python
