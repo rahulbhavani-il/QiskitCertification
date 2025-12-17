@@ -843,15 +843,225 @@ Multiple scattered methods         └──────────────
 ```
 
 #### Code Comparison Table
+| **Feature** | **Definition** | **V1 API (Old)** | **V2 API (New)** |
+|-------------|----------------|------------------|------------------|
+| **Get basis gates** | The set of native quantum gates that the hardware can physically execute (all other gates must be decomposed into these) | `backend.configuration().basis_gates` | `backend.target.operation_names` |
+| **Get coupling map** | The graph of physical connections between qubits that determines which qubit pairs can perform two-qubit gates directly | `backend.configuration().coupling_map` | `backend.target.build_coupling_map()` |
+| **Check gate support** | Verify whether a specific gate operation is natively supported on a particular set of qubits | Manual parsing of config | `target.instruction_supported('cx', (0,1))` |
+| **Gate properties** | Hardware characteristics of a gate including error rate (probability of failure) and duration (execution time in device units) | `backend.properties().gate_property(...)` | `target['cx'][(0,1)].error` |
+| **Qubit properties** | Physical characteristics of individual qubits including T1 (relaxation time), T2 (dephasing time), and operating frequency | `backend.properties().qubit_property(...)` | `target.qubit_properties[0].t1` |
+| **Number of qubits** | The total count of physical qubits available on the quantum processor | `backend.configuration().n_qubits` | `backend.num_qubits` |
 
-| **Feature** | **V1 API (Old)** | **V2 API (New)** |
-|-------------|------------------|------------------|
-| **Get basis gates** | `backend.configuration().basis_gates` | `backend.target.operation_names` |
-| **Get coupling map** | `backend.configuration().coupling_map` | `backend.target.build_coupling_map()` |
-| **Check gate support** | Manual parsing of config | `target.instruction_supported('cx', (0,1))` |
-| **Gate properties** | `backend.properties().gate_property(...)` | `target['cx'][(0,1)].error` |
-| **Qubit properties** | `backend.properties().qubit_property(...)` | `target.qubit_properties[0].t1` |
-| **Number of qubits** | `backend.configuration().n_qubits` | `backend.num_qubits` |
+### Qubit Properties Deep Dive: T1, T2, and Frequency
+
+#### T1 (Relaxation Time) - "Energy Decay"
+
+**Definition**: T1 measures how long a qubit can maintain its excited state |1⟩ before spontaneously decaying to the ground state |0⟩ due to energy loss to the environment.
+
+```
+Time = 0          Time = T1         Time = 2×T1
+|1⟩ ████████      |1⟩ ████          |1⟩ ██
+                  
+Energy leaks out like heat from a hot cup of coffee
+```
+
+**Physical Meaning**:
+- **What happens**: The qubit loses energy to its surroundings (like a ball rolling downhill)
+- **Typical values**: 50-200 microseconds on IBM hardware
+- **Impact**: Limits how long your circuit can run before |1⟩ states corrupt to |0⟩
+
+**Memory Aid - "T1 = Temperature Drop"** 🌡️
+- Think of T1 as how long a **hot coffee stays hot**
+- |1⟩ = Hot (excited state)
+- |0⟩ = Room temperature (ground state)
+- T1 = Time for coffee to cool down halfway
+- **Longer T1 = Better thermos = Better qubit**
+
+#### T2 (Dephasing Time) - "Phase Scramble"
+
+**Definition**: T2 measures how long a qubit can maintain coherent superposition before random phase fluctuations destroy the quantum information. It's always ≤ 2×T1.
+
+```
+Time = 0                    Time = T2
+|+⟩ = |0⟩ + |1⟩            Phase scrambled!
+     ↑ precise phase             ↑ random phase
+
+Like a spinning top that starts wobbling
+```
+
+**Physical Meaning**:
+- **What happens**: Environmental noise causes random rotations around the Z-axis
+- **Typical values**: 50-150 microseconds (always T2 ≤ 2×T1)
+- **Impact**: Limits quality of superposition states and phase-sensitive operations
+
+**Memory Aid - "T2 = Tuning Fork"** 🎵
+- Think of T2 as how long a **tuning fork stays in tune**
+- Superposition = Perfect pitch (in tune)
+- Dephasing = Going out of tune (frequency drift)
+- T2 = Time before the note becomes unrecognizable
+- **Longer T2 = Better tuning fork = Better phase coherence**
+
+#### Frequency - "Qubit's Radio Station"
+
+**Definition**: The resonant frequency (in GHz) at which the qubit transitions between |0⟩ and |1⟩ states. This is the energy difference E = hf where h is Planck's constant.
+
+```
+|1⟩ ─────────────  Energy E₁
+    │
+    │ ΔE = hf (frequency determines this gap)
+    │
+|0⟩ ─────────────  Energy E₀
+
+f = (E₁ - E₀) / h ≈ 5 GHz for IBM transmons
+```
+
+**Note**: Frequency is unrelated to device time units (dt). 
+- **Frequency (GHz)**: Physical property of the qubit's energy levels
+- **dt (nanoseconds)**: Hardware clock resolution for scheduling pulses
+
+They are independent parameters—dt is the timing granularity for control signals, while frequency is the electromagnetic "address" used to manipulate a specific qubit.
+
+**Physical Meaning**:
+- **What happens**: Control pulses at this exact frequency flip the qubit
+- **Typical values**: 4.5-5.5 GHz for IBM superconducting qubits
+- **Impact**: Each qubit has unique frequency to avoid crosstalk
+
+**Memory Aid - "Frequency = Radio Station"** 📻
+- Each qubit is tuned to a **different radio station**
+- Qubit 0 = 4.8 GHz (Station 1)
+- Qubit 1 = 5.1 GHz (Station 2)
+- To control a qubit, you **tune to its station**
+- Different frequencies = No interference between qubits
+
+### Combined Memory Aid: "The Qubit Health Report" 🏥
+
+```
+┌─────────────────────────────────────────────────────────┐
+│           QUBIT HEALTH CERTIFICATE                       │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  T1 (Energy Stamina)     🔋 How long it stays "charged"  │
+│  ├─ Like: Battery life                                   │
+│  └─ Longer = Can run deeper circuits                     │
+│                                                          │
+│  T2 (Phase Stability)    ⏱️ How long it stays "in sync"  │
+│  ├─ Like: Clock accuracy                                 │
+│  └─ Longer = Better superpositions                       │
+│                                                          │
+│  Frequency (Address)     📍 Its unique "phone number"    │
+│  ├─ Like: Radio dial position                            │
+│  └─ Different = No crosstalk                             │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+### Practical Impact on Circuit Design
+
+**Why This Matters**: Your quantum circuit must execute faster than your qubits lose their quantum properties. If your circuit takes too long, the qubits will "forget" their state before you finish computing.
+
+```python
+# Check if your circuit fits within coherence limits
+target = backend.target
+qubit_props = target.qubit_properties[0]
+
+t1 = qubit_props.t1  # e.g., 150e-6 seconds (150 μs)
+t2 = qubit_props.t2  # e.g., 100e-6 seconds (100 μs)
+
+# Estimate circuit duration (rough: 50ns per gate)
+circuit_duration = transpiled.depth() * 50e-9  # seconds
+
+if circuit_duration > t2 * 0.1:  # Rule of thumb: stay under 10% of T2
+    print("⚠️ Warning: Circuit may suffer from decoherence!")
+    print(f"  Circuit: {circuit_duration*1e6:.1f} μs")
+    print(f"  T2 limit: {t2*1e6:.1f} μs (use < {t2*0.1*1e6:.1f} μs)")
+else:
+    print("✅ Circuit duration within safe coherence limits")
+```
+
+**What This Code Does (Plain English)**:
+
+1. **Get qubit timing specs**: Retrieves T1 and T2 values (how long the qubit stays "good")
+
+2. **Estimate your circuit's runtime**: Multiplies circuit depth by ~50 nanoseconds per gate (rough average for IBM hardware)
+
+3. **Apply the 10% rule**: Your circuit should ideally complete in less than 10% of T2 time
+    - **Why 10%?** This safety margin accounts for the fact that decoherence effects accumulate. At 10% of T2, you've lost roughly 10% of your quantum information. Beyond this, errors grow rapidly.
+
+4. **Warn if too slow**: If your circuit exceeds this limit, results will be unreliable due to qubits losing coherence mid-computation
+
+**Example Scenario**:
+- T2 = 100 μs (microseconds)
+- Safe limit = 10 μs (10% of T2)
+- Your circuit depth = 300 gates
+- Circuit duration = 300 × 50ns = 15 μs
+- **Result**: ⚠️ Warning! 15 μs > 10 μs limit
+
+**Device Time Units (dt)**
+
+The **device time unit (dt)** is the fundamental time resolution of a quantum device's control system. It represents the smallest discrete time step at which the hardware can schedule operations.
+
+```
+1 dt = Hardware clock period ≈ 0.222 nanoseconds (typical IBM systems)
+
+Example:
+    If dt = 0.222 ns and a CX gate takes 256 dt:
+    CX duration = 256 × 0.222 ns ≈ 57 nanoseconds
+```
+
+**Why dt instead of seconds?**
+- All pulse schedules are quantized to dt boundaries
+- Hardware operates on discrete clock cycles
+- Ensures synchronization between control signals
+
+**Access dt value:**
+```python
+dt = backend.dt  # Returns dt in seconds (e.g., 2.22e-10)
+```
+**Relationship to Device Time Units (dt)**:
+
+The gate durations in the Target object are given in **device time units (dt)**, not seconds. To convert:
+
+```python
+# Get the dt value (time per device unit) from backend
+dt = backend.dt  # e.g., 0.222e-9 seconds (0.222 nanoseconds)
+
+# Gate duration is stored in dt units
+cx_duration_dt = target['cx'][(0,1)].duration  # e.g., 256 dt
+
+# Convert to seconds
+cx_duration_seconds = cx_duration_dt * dt  # 256 × 0.222ns ≈ 57 ns
+
+# More accurate circuit duration estimate:
+total_duration = sum(
+     target[gate][(qubits)].duration * dt 
+     for gate, qubits in circuit_operations
+)
+```
+
+**Why dt instead of seconds?**
+- Hardware clock operates in discrete time steps
+- All pulse schedules are aligned to dt boundaries
+- Typical dt ≈ 0.2-0.5 nanoseconds for IBM systems
+
+**Memory Aid**: "dt = Device Tick" - the smallest time step the hardware clock can resolve.
+
+**Practical Solutions When Circuit is Too Long**:
+1. Increase `optimization_level` to reduce gate count
+2. Choose qubits with higher T1/T2 values
+3. Enable dynamical decoupling to fight decoherence
+4. Simplify your algorithm if possible
+
+### Exam Quick Reference
+
+| Property | What It Measures | Analogy | Typical Value | Longer = Better? |
+|----------|------------------|---------|---------------|------------------|
+| **T1** | Energy retention | Battery life | 50-200 μs | ✅ Yes |
+| **T2** | Phase coherence | Clock drift | 50-150 μs | ✅ Yes |
+| **Frequency** | Qubit address | Radio station | 4.5-5.5 GHz | N/A (unique) |
+
+**Key Relationship**: T2 ≤ 2×T1 (always! phase loss includes energy loss)
+
+**Mnemonic**: "**T**wo is **T**wice **T**oo much" → T2 can never exceed 2×T1
+
 
 #### Detailed Code Examples
 

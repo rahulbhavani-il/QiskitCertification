@@ -172,13 +172,30 @@ $$|j\rangle \xrightarrow{QFT} \frac{1}{\sqrt{N}}\sum_{k=0}^{N-1} e^{2\pi ijk/N}|
   - Contains quantum gates, measurements, and classical operations
   - Created with `QuantumCircuit(n_qubits, n_clbits)`
   - Example: `qc = QuantumCircuit(3, 3)` creates 3 qubits and 3 classical bits
-
 - **Properties**: Measurable characteristics of a circuit
-  - `depth()`: The critical path length (longest sequential chain of operations)
-  - `size()`: Total count of all gates/operations in the circuit
-  - `width()`: Total number of wires (qubits + classical bits)
-  - `num_qubits`: Number of quantum bits (property, no parentheses)
-  - `num_clbits`: Number of classical bits (property, no parentheses)
+     - `depth()`: The critical path length (longest sequential chain of operations)
+          - **Includes measurements**: Measurements are counted as operations in depth calculation
+          - Each measurement layer adds 1 to the depth
+     - `size()`: Total count of all gates/operations in the circuit
+          - **Includes measurements**: By default, measurements are counted in size
+          - `size(filter_function=lambda x: x[0].name != 'measure')` to exclude measurements
+     - `width()`: Total number of wires (qubits + classical bits)
+     - `num_qubits`: Number of quantum bits (property, no parentheses)
+     - `num_clbits`: Number of classical bits (property, no parentheses)
+
+**⚠️ Exam Note on Measurements**:
+- **Depth**: Measurements **always** count as a layer (typically the final layer)
+- **Size**: Measurements **are** included by default in Qiskit's `size()` count
+- Example:
+     ```python
+     qc = QuantumCircuit(2, 2)
+     qc.h(0)           # Layer 1
+     qc.cx(0, 1)       # Layer 2
+     qc.measure_all()  # Layer 3 (adds to depth!)
+     
+     print(qc.depth())  # Output: 3 (H → CX → Measure)
+     print(qc.size())   # Output: 4 (1 H + 1 CX + 2 Measure ops)
+     ```
 
 - **Registers**: Named collections of qubits or classical bits
   - `QuantumRegister(n, 'name')`: Group of n qubits with a label
