@@ -632,10 +632,42 @@ rho_noisy = rho.evolve(noise_channel)
 
 ### ⚠️ Trap Alert
 
-**Trap: Using Statevector for mixed states**
-- ❌ **Wrong**: `Statevector` can represent a 50/50 classical mixture
-- ✅ **Correct**: Only `DensityMatrix` can represent mixed states
-- 🔍 **Why it's tricky**: Superposition ≠ mixture!
+**Trap: Confusing Superposition with Classical Mixture**
+- ❌ **Wrong**: `Statevector` can represent a 50/50 classical mixture of |0⟩ and |1⟩
+- ✅ **Correct**: Only `DensityMatrix` can represent classical mixtures (mixed states)
+- 🔍 **Why it's tricky**: The notation "50% |0⟩ + 50% |1⟩" is ambiguous!
+
+**Two COMPLETELY Different Meanings**:
+
+1. **Quantum Superposition** (Pure State - use Statevector):
+  - |+⟩ = (|0⟩ + |1⟩)/√2
+  - Coherent quantum state with interference
+  - Can see interference patterns (e.g., H|+⟩ = |0⟩)
+  - Purity = 1.0
+
+2. **Classical Mixture** (Mixed State - use DensityMatrix):
+  - 50% probability of |0⟩ OR 50% probability of |1⟩
+  - Classical uncertainty (like a coin flip)
+  - NO interference - just statistical randomness
+  - Purity = 0.5
+
+**The Key Difference**:
+```python
+# SUPERPOSITION (pure, coherent)
+|+⟩ = (|0⟩ + |1⟩)/√2  ← Plus sign means INTERFERENCE
+ρ = |+⟩⟨+| = [[0.5, 0.5],   ← Off-diagonal terms!
+          [0.5, 0.5]]
+
+# MIXTURE (mixed, incoherent)
+ρ = 0.5|0⟩⟨0| + 0.5|1⟩⟨1| = [[0.5, 0],    ← NO off-diagonal!
+                    [0, 0.5]]
+```
+
+**Physical Example**:
+- **Superposition**: Photon in |H⟩+|V⟩ state (both polarizations AT ONCE)
+- **Mixture**: Photon that's either |H⟩ OR |V⟩ (you just don't know which)
+
+**Mnemonic**: "Off-diagonal = Quantum Magic" - If the density matrix has non-zero off-diagonal elements, you have superposition. If all off-diagonal elements are zero, you have a classical mixture.
 
 ```python
 from qiskit.quantum_info import Statevector, DensityMatrix

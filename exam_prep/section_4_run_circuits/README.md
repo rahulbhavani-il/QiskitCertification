@@ -607,12 +607,190 @@ with Batch(backend=backend) as batch:
     # Jobs grouped for efficiency
 ```
 
-**Session with TTL**
+#### Example Scenarios with Pseudocode
+
+**Scenario 1: Job Mode - Single Test Circuit**
 ```python
-with Session(backend=backend, max_time="2h") as session:
-    # Session closes after 2 hours max
-    estimator = Estimator(mode=session)
+# Testing a single algorithm
+from qiskit_ibm_runtime import SamplerV2 as Sampler
+
+# Direct backend execution (no session needed)
+sampler = Sampler(mode=backend)
+
+# Run once
+job = sampler.run([bell_circuit])
+result = job.result()
+counts = result[0].data.meas.get_counts()
+
+# Use case: Quick tests, debugging, one-off measurements
 ```
+
+**Scenario 2: Batch Mode - Parameter Sweep**
+```python
+# Benchmarking 50 circuits with different parameters
+from qiskit_ibm_runtime import Batch, SamplerV2 as Sampler
+
+# Prepare 50 independent circuits
+circuits = [create_vqe_circuit(theta) for theta in np.linspace(0, 2*np.pi, 50)]
+
+# Batch groups jobs for efficient parallel execution
+with Batch(backend=backend) as batch:
+    sampler = Sampler(mode=batch)
+    job = sampler.run(circuits)  # All 50 submit together
+    result = job.result()
+
+# Use case: Parameter sweeps, benchmarking, independent circuits
+# Backend optimizes execution order for efficiency
+```
+
+**Scenario 3: Session Mode - VQE Algorithm**
+```python
+# Variational algorithm with ~100 iterations
+from qiskit_ibm_runtime import Session, EstimatorV2 as Estimator
+
+with Session(backend=backend, max_time="1h") as session:
+    estimator = Estimator(mode=session)
+    
+    params = initial_params
+    for iteration in range(100):
+        # Measure cost function
+        pub = (vqe_circuit, hamiltonian, params)
+        job = estimator.run([pub])
+        result = job.result()
+        cost = result[0].data.evs[0]
+        
+        # Classical optimizer updates params
+        params = optimizer.step(cost, params)
+        
+        # Next iteration uses SAME reserved QPU (no re-queuing!)
+    
+    final_energy = cost
+
+# Use case: VQE, QAOA, any algorithm with classical feedback loop
+# Session reserves QPU, preventing queue delays between iterations
+```
+
+**Scenario 4: Session Mode - QAOA with Mid-Circuit Feedback**
+```python
+# QAOA with adaptive layers based on intermediate results
+with Session(backend=backend) as session:
+    sampler = Sampler(mode=session)
+    
+    # Layer 1
+    job1 = sampler.run([qaoa_layer1])
+    result1 = job1.result()
+    counts1 = result1[0].data.meas.get_counts()
+    
+    # Analyze counts, decide next layer
+    if max(counts1.values()) > threshold:
+        qaoa_layer2 = build_deeper_circuit()
+    else:
+        qaoa_layer2 = build_shallower_circuit()
+    
+    # Layer 2 runs without queuing delay
+    job2 = sampler.run([qaoa_layer2])
+    result2 = job2.result()
+
+# Use case: Adaptive algorithms, quantum error correction calibration
+```
+
+**Scenario 5: Batch Mode - Benchmarking Multiple Algorithms**
+```python
+# Compare 20 different quantum algorithms
+algorithms = [
+    deutsch_jozsa(),
+    grover_search(),
+    simon_algorithm(),
+    # ... 17 more
+]
+
+with Batch(backend=backend) as batch:
+    sampler = Sampler(mode=batch)
+    
+    # All algorithms submit together
+    job = sampler.run(algorithms)
+    results = job.result()
+    
+    # Process all results
+    for i, result in enumerate(results):
+        counts = result.data.meas.get_counts()
+        success_rate = measure_algorithm_success(counts)
+        print(f"Algorithm {i}: {success_rate:.2%} success")
+
+# Use case: Fair comparison (same backend conditions), parallel benchmarking
+```
+
+#### Decision Tree for Mode Selection
+
+```
+┌─ Do you need results to inform next circuit? ───────────┐
+│                                                          │
+│  NO                           YES                        │
+│   ↓                            ↓                         │
+│  How many circuits?      → SESSION MODE                  │
+│   ↓                        (iterative, feedback)        │
+│  Just 1?                                                 │
+│   ↓                                                      │
+│  YES → JOB MODE                                          │
+│  (single, testing)                                       │
+│   ↓                                                      │
+│  NO → BATCH MODE                                         │
+│  (many, independent)                                     │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Mode Selection Guidelines**
+
+| Situation | Recommended Mode | Reason |
+|-----------|-----------------|---------|
+| Single circuit test | Job | Simplest, no overhead |
+| 10-100 independent circuits | Batch | Parallel execution, grouped |
+| VQE/QAOA optimization | Session | Reserved access, no re-queuing |
+| Parameter sweep (no feedback) | Batch | Independent, can parallelize |
+| Adaptive algorithm | Session | Each result informs next circuit |
+| Quick prototype | Job | Fast, minimal setup |
+| Production workload | Batch or Session | Depends on interdependence |
+
+**Visual: Mode Comparison**
+
+```
+┌────────────────────────────────────────────────────────┐
+│              EXECUTION MODE CHARACTERISTICS             │
+├────────────────────────────────────────────────────────┤
+│                                                         │
+│  JOB MODE:           BATCH MODE:        SESSION MODE:  │
+│                                                         │
+│  Single Circuit      Multiple Circuits   Iterative     │
+│  ┌────┐              ┌─┬─┬─┬─┬─┐        ┌──→──→──→──┐ │
+│  │ QC │              │ │ │ │ │ │        │   Loop    │ │
+│  └────┘              └─┴─┴─┴─┴─┘        └──←──←──←──┘ │
+│                                                         │
+│  Queue once          Queue once          Reserved QPU  │
+│  Run immediately     Optimized order     Sequential    │
+│  No overhead         Grouped              No re-queue  │
+│                                                         │
+│  Best for:           Best for:           Best for:     │
+│  • Testing           • Benchmarks         • VQE/QAOA   │
+│  • Debugging         • Param sweeps       • Adaptive   │
+│  • One-off           • Independent        • Feedback   │
+│                                                         │
+└────────────────────────────────────────────────────────┘
+```
+
+**Common Pitfalls**
+
+❌ **Using Session for independent circuits**
+- Wastes reserved time waiting for results
+- Better: Use Batch mode for parallel execution
+
+❌ **Using Batch for VQE iterations**
+- Each iteration must wait in queue
+- Better: Use Session for reserved access
+
+✅ **Correct patterns:**
+- Job: Single circuit, testing phase
+- Batch: 50 Grover instances with different databases
+- Session: VQE with 200 cost function evaluations
 
 #### 4. ⚠️ Trap Alert
 
