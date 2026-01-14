@@ -21,6 +21,7 @@ This folder contains comprehensive study materials organized to help you master 
 ```
 exam_prep/
 ├── README.md                              # This file - your study guide navigation
+├── requirements.txt                       # Python dependencies for all notebooks
 │
 ├── qiskit_certification_guide.md          # Complete conceptual overview
 ├── KeyTakeAways.md                        # Essential facts and exam traps (3,971 lines!)
@@ -81,6 +82,42 @@ exam_prep/
     ├── section_8_practice.ipynb           # Practice: OpenQASM
     └── section_9_practice.ipynb           # Practice: Quantum Info
 ```
+
+---
+
+---
+
+## 🚀 Quick Start
+
+### Installation
+
+1. **Clone or download this repository**
+2. **Install required packages**:
+   ```bash
+   cd exam_prep
+   pip install -r requirements.txt
+   ```
+
+The `requirements.txt` file includes:
+- **Qiskit v2.x**: Core quantum computing framework
+- **qiskit-ibm-runtime**: IBM Quantum runtime primitives (Sampler, Estimator)
+- **matplotlib & pylatexenc**: Circuit and state visualization
+- **numpy & scipy**: Scientific computing
+- **jupyter & notebook**: Interactive coding environment
+- **qiskit-aer**: Local simulators for testing
+- **qiskit-qasm3-import**: OpenQASM 3 support
+
+3. **Start Jupyter**:
+   ```bash
+   jupyter notebook
+   ```
+
+4. **Navigate to any section folder and open the notebooks**
+
+### System Requirements
+- Python 3.9 or higher
+- 4GB+ RAM (8GB recommended for larger circuits)
+- Internet connection for IBM Quantum Platform access (optional)
 
 ---
 
@@ -474,10 +511,11 @@ Test your understanding with:
 ## 🎓 Study Tips
 
 ### Before You Start
-1. **Install Qiskit v2.x**: `pip install qiskit qiskit-ibm-runtime`
-2. **Set up Jupyter**: `pip install jupyter matplotlib`
+1. **Install dependencies**: `pip install -r requirements.txt` (see Quick Start section above)
+2. **Verify installation**: Run `python -c "import qiskit; print(qiskit.__version__)"` (should show 2.x)
 3. **Clone this repo**: Have all materials locally
-4. **Create IBM Quantum account**: Free access to simulators
+4. **Create IBM Quantum account**: Free access to simulators at [quantum.ibm.com](https://quantum.ibm.com)
+5. **Test Jupyter**: Run `jupyter notebook` and open any .ipynb file
 
 ### Effective Study Strategies
 1. **Code Along**: Don't just read - type and execute every example
