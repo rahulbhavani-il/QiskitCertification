@@ -1994,82 +1994,668 @@ Remember: Each SWAP = 3 CNOTs!
 
 ### 📚 Concept Checklist
 ```
+CIRCUIT CREATION CONCEPTS:
 □ QuantumCircuit(n, m) creates n qubits, m classical bits (Q before C!)
-□ QuantumRegister/ClassicalRegister for named, organized circuits
-□ depth() = longest path (critical path), includes measurements
-□ size() = total operation count (gates + measurements)
-□ width() = total wires (qubits + classical bits)
-□ num_qubits is a PROPERTY (no parentheses)
+□ QuantumCircuit argument order: qubits FIRST, classical bits SECOND
+□ QuantumCircuit() with no args creates empty circuit (add registers later)
+□ QuantumCircuit can accept multiple registers: QuantumCircuit(qr1, qr2, cr)
+□ QuantumRegister for named quantum registers (better organization)
+□ ClassicalRegister for named classical registers (measurement storage)
+□ Registers have .name and .size attributes
+□ Qubits initialized to |0⟩ state by default (cannot specify initial state in constructor)
+□ Classical bits initialized to 0 by default
+□ Circuit objects are mutable (can add gates after creation)
+□ Empty circuit has depth=0, size=0, width=0
+□ QuantumCircuit.from_qasm_str() creates circuit from OpenQASM string
+□ QuantumCircuit.from_qasm_file() loads circuit from QASM file
+□ Circuit names can be set: qc.name = 'my_circuit'
+□ Global phase tracked separately: qc.global_phase (doesn't affect measurements)
+
+CIRCUIT PROPERTY CONCEPTS:
+□ depth() = longest path through circuit (critical path length)
+□ depth() includes ALL operations: gates, measurements, barriers
 □ Parallel gates on different qubits share the same depth layer
-□ compose() = sequential combination (same qubits, width unchanged)
-□ tensor() = parallel combination (adds new qubits, width increases)
-□ append() = add single gate/operation to circuit
-□ Parameter = symbolic placeholder for rotation angles
-□ ParameterVector = efficient creation of multiple parameters
-□ Parameters must be bound before circuit execution
-□ c_if() = legacy conditional (gate.c_if syntax)
-□ if_test() = modern conditional (context manager with tuple)
-□ Dynamic circuits: for_loop, while_loop, switch for runtime control
-□ Circuit Library: QFT, RealAmplitudes, EfficientSU2, TwoLocal
-□ VQE ansatz = parameterized circuit + classical optimizer
-□ QAOA = alternating cost (γ) and mixer (β) layers
-□ Transpiler 6 stages: Init→Layout→Routing→Translation→Optimization→Scheduling
-□ SWAP = 3 CNOTs (routing is expensive!)
+□ Sequential gates on same qubit increase depth
+□ Barrier gates add 0 to depth (they don't affect critical path)
+□ size() = total operation count (sum of all gates + measurements)
+□ size() includes barriers, measurements, all instructions
+□ width() = total number of wires (qubits + classical bits)
+□ width() = num_qubits + num_clbits (property calculation)
+□ num_qubits is a PROPERTY (no parentheses!) returns int
+□ num_clbits is a PROPERTY (no parentheses!) returns int
+□ num_parameters returns count of unbound parameters (property)
+□ count_ops() returns dict with gate counts: {'h': 2, 'cx': 3}
+□ count_ops() does NOT include parameter information
+□ Depth calculation: parallel ops = 1 layer, sequential = multiple layers
+□ Empty circuit metrics: depth=0, size=0, width=total wires
+
+COMPOSITION CONCEPTS:
+□ compose() = sequential combination (gates applied one after another)
+□ compose() operates on SAME qubits (width unchanged)
+□ compose() default: appends qc2 after qc1 (front=False)
+□ compose() with front=True prepends qc2 before qc1
+□ compose() with qubits=[...] maps to specific target qubits
+□ compose() with clbits=[...] maps classical bits
+□ compose() with inplace=True modifies original circuit
+□ compose() with inplace=False returns new circuit (default)
+□ compose() preserves gate order and dependencies
+□ compose() can map smaller circuit to subset of larger circuit
+□ tensor() = parallel combination (side-by-side circuits)
+□ tensor() ADDS qubits (width increases by qc2.num_qubits)
+□ tensor() creates independent subsystems (no interaction)
+□ tensor() equivalent to tensor product notation: qc1 ⊗ qc2
+□ tensor() qubits from qc2 added after qc1's qubits
+□ tensor() classical bits also concatenated
+□ append() adds single instruction/gate to circuit
+□ append() requires qubit list argument (even for single qubit)
+□ append() can add custom gates, barriers, measurements
+□ append() preserves instruction order (sequential addition)
+□ Composition is associative: (A∘B)∘C = A∘(B∘C)
+□ Tensor product is associative: (A⊗B)⊗C = A⊗(B⊗C)
+
+PARAMETERIZED CIRCUIT CONCEPTS:
+□ Parameter = symbolic placeholder for gate rotation angles
+□ Parameter acts like variable in algebra (unbound value)
+□ Parameter has .name attribute (string identifier)
+□ Parameter identity matters: Parameter('θ') twice = TWO parameters!
+□ Same name ≠ same parameter object (object identity, not string equality)
+□ ParameterVector = efficient creation of multiple related parameters
+□ ParameterVector creates indexed parameters: θ[0], θ[1], θ[2]...
+□ ParameterVector useful for ansätze with many parameters
+□ Parameters can appear in mathematical expressions: 2*theta, theta+phi
+□ Parameter expressions supported: sin(theta), cos(theta), theta**2
+□ Parameters must be bound before circuit execution (no unbound params on hardware)
+□ Binding creates new circuit with concrete values (doesn't mutate original)
+□ assign_parameters() is modern API (bind_parameters deprecated)
+□ Partial binding allowed (bind subset of parameters)
+□ qc.parameters returns ParameterView (set-like) of unbound parameters
+□ len(qc.parameters) == 0 indicates fully bound circuit
+□ Parameters enable variational algorithms (VQE, QAOA)
+□ Parameters allow circuit reuse with different values
+□ Parameter binding preserves circuit structure
+□ Unbound parameters prevent transpilation (transpiler needs concrete angles)
+
+CLASSICAL CONTROL CONCEPTS:
+□ c_if() = legacy conditional execution (deprecated but still supported)
+□ c_if() syntax: gate.c_if(clbit, value) - gate method first, then condition
+□ c_if() operates on classical bit or classical register
+□ c_if() register value interpreted as INTEGER (binary representation)
+□ c_if() example: cr==3 means binary '11' (both bits set to 1)
+□ c_if() condition evaluated at runtime (dynamic decision)
+□ if_test() = modern conditional (context manager API)
+□ if_test() requires TUPLE syntax: (clbit, value) not clbit, value
+□ if_test() supports if-else blocks with 'as else_:' syntax
+□ if_test() integrates with expr module for complex conditions
+□ if_test() can test individual bits or full registers
+□ expr.logic_and(), expr.logic_or() combine conditions
+□ expr.equal(), expr.not_equal() for equality testing
+□ expr.less(), expr.greater() for comparisons
+□ Measurements must happen BEFORE conditionals (condition needs measured value)
+□ Conditional gates only execute if condition is true
+□ Conditional execution adds to circuit depth (branch taken)
+□ Classical bits hold measurement outcomes (0 or 1)
+□ Classical registers combine bits into integer values
+□ Bit indexing: cr[0] is least significant bit (LSB)
+□ Register interpretation: big-endian for bit ordering
+
+DYNAMIC CIRCUIT CONCEPTS:
+□ Dynamic circuits = circuits with runtime control flow
+□ for_loop() executes block for fixed number of iterations
+□ for_loop() syntax: with qc.for_loop(range(n)):
+□ for_loop() loop variable can be used in block (parameter)
+□ while_loop() executes while condition remains true
+□ while_loop() syntax: with qc.while_loop((clbit, value)):
+□ while_loop() condition checked at runtime (measurement-based)
+□ switch() enables multi-way branching (multiple cases)
+□ switch() syntax: with qc.switch(creg) as case:
+□ switch() cases can be individual values or ranges
+□ switch() default case with case(case.DEFAULT):
+□ break_loop() and continue_loop() control loop flow
+□ Dynamic circuits require hardware support (not all backends)
+□ Dynamic circuits enable adaptive algorithms
+□ Dynamic circuits allow feedback (measurement → gate decision)
+□ Loop depth calculation includes iterations
+□ Nested control flow supported (loops in conditionals)
+
+CIRCUIT LIBRARY CONCEPTS:
+□ qiskit.circuit.library contains pre-built circuits
+□ QFT = Quantum Fourier Transform (basis of many algorithms)
+□ QFT(n) creates n-qubit QFT circuit
+□ QFT has do_swaps parameter (bit reversal swaps)
+□ RealAmplitudes = VQE ansatz with RY rotations + CNOT entanglement
+□ RealAmplitudes(n, reps) has reps repetition layers
+□ RealAmplitudes uses only real amplitudes (no complex phase)
+□ EfficientSU2 = hardware-efficient ansatz (RY + RZ + CNOT)
+□ EfficientSU2 covers full SU(2) single-qubit space
+□ EfficientSU2 efficient on hardware (basis gate compatible)
+□ TwoLocal = customizable ansatz (rotation + entanglement)
+□ TwoLocal(n, rotation, entanglement, reps) fully configurable
+□ NLocal generalizes to n-qubit gates (N>2)
+□ PauliEvolutionGate implements e^(-iHt) time evolution
+□ Library circuits are parameterized (must bind before execution)
+□ Library circuits compose with regular circuits
+□ Library circuits optimize for specific use cases
+
+TRANSPILER CONCEPTS (6 STAGES):
+□ Transpiler = compiler from logical circuit to physical circuit
+□ Transpiler has 6 sequential stages (pipeline architecture)
+□ Stage 1 - Init: Decomposes high-level gates (3+ qubits)
+□ Init stage: Unroll3qOrMore pass breaks down complex gates
+□ Init stage ensures max 2-qubit gates for routing
+□ Stage 2 - Layout: Maps logical qubits → physical qubits
+□ Layout selection critical for circuit performance
+□ TrivialLayout: q[i] → physical qubit i (simple, no optimization)
+□ VF2Layout: Graph isomorphism for perfect subgraph embedding
+□ VF2Layout finds optimal layout when it exists (may be slow)
+□ SabreLayout: Heuristic search, best for general use
+□ SabreLayout works well on large circuits (scales better)
+□ DenseLayout: Places connected qubits on connected hardware qubits
+□ Layout affects routing cost (good layout = fewer SWAPs)
+□ Stage 3 - Routing: Inserts SWAP gates for non-adjacent qubits
+□ Routing needed when 2-qubit gate spans non-connected qubits
+□ Each SWAP = 3 CNOT gates (expensive operation!)
+□ SabreSwap: Heuristic routing (default, generally good)
+□ StochasticSwap: Random search with scoring (alternative)
+□ Routing minimizes SWAP count (depth vs gate count tradeoff)
+□ Coupling map defines allowed 2-qubit interactions
+□ Stage 4 - Translation: Converts gates to hardware basis gates
+□ Translation uses BasisTranslator pass
+□ Basis gates: hardware-native operations (e.g., ['id','rz','sx','x','cx'])
+□ Translation ensures all gates are executable on hardware
+□ Some gates decompose into multiple basis gates
+□ Stage 5 - Optimization: Reduces circuit depth and gate count
+□ Optimization level 0: No optimization (TrivialLayout, minimal passes)
+□ Optimization level 1: Light optimization (basic passes)
+□ Optimization level 2: Medium optimization (default, balanced)
+□ Optimization level 3: Heavy optimization (unitary synthesis, slow)
+□ Higher optimization = more compilation time
+□ Higher optimization ≠ always better results (diminishing returns)
+□ Optimization passes: gate cancellation, commutation analysis, resynthesis
+□ Stage 6 - Scheduling: Adds timing information (pulse-level)
+□ Scheduling converts to time-domain representation
+□ ASAP: As Soon As Possible (minimize idle at start)
+□ ALAP: As Late As Possible (minimize idle at end)
+□ ALAP better for decoherence (gates execute closer to measurement)
+□ Scheduled circuits include Delay instructions
+□ Delay instructions represent idle time (no gates)
+□ Scheduling aligns gates with hardware constraints
+□ Backend object provides: coupling map, basis gates, timing info
+□ Transpiler without backend uses generic constraints
+□ Transpilation deterministic given same seed (reproducible)
+□ PassManager orchestrates all stages (configurable pipeline)
 ```
 
 ### 💻 Code Pattern Checklist
 ```
-□ qc = QuantumCircuit(n_qubits, n_clbits) creates circuit
-□ qc = QuantumCircuit(qr, cr) creates circuit with named registers
-□ qr = QuantumRegister(n, 'name') creates named quantum register
-□ cr = ClassicalRegister(n, 'name') creates named classical register
-□ qc.depth() returns critical path length (method with parentheses)
-□ qc.size() returns total operation count (method with parentheses)
-□ qc.width() returns total wire count (method with parentheses)
-□ qc.num_qubits returns qubit count (PROPERTY - no parentheses!)
-□ qc.num_clbits returns classical bit count (PROPERTY - no parentheses!)
-□ qc.count_ops() returns dict of gate counts {'h': 1, 'cx': 2}
-□ result = qc1.compose(qc2) combines sequentially (returns new circuit)
-□ qc1.compose(qc2, inplace=True) modifies qc1 directly
-□ qc1.compose(qc2, qubits=[1,2]) maps to specific qubits
-□ qc1.compose(qc2, front=True) prepends instead of appends
-□ result = qc1.tensor(qc2) combines in parallel (adds qubits)
-□ qc.append(gate, [qubits]) adds single operation (LIST required!)
-□ theta = Parameter('θ') creates symbolic parameter
-□ params = ParameterVector('θ', n) creates θ[0]...θ[n-1]
-□ bound = qc.assign_parameters({param: value}) binds parameters
-□ bound = qc.assign_parameters({params: [v0, v1, v2]}) binds vector
-□ qc.parameters returns set of unbound parameters
-□ len(qc.parameters) == 0 means all parameters bound
-□ qc.x(1).c_if(clbit, value) applies X conditionally
-□ with qc.if_test((clbit, value)): block applies conditionally
-□ with qc.if_test((clbit, value)) as else_: enables if-else
+CIRCUIT CREATION PATTERNS:
+□ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+□ qc = QuantumCircuit(3) creates 3 qubits, 0 classical bits
+□ qc = QuantumCircuit(3, 2) creates 3 qubits, 2 classical bits
+□ qc = QuantumCircuit(n_qubits, n_clbits) standard creation pattern
+□ qr = QuantumRegister(5, 'q') creates quantum register named 'q'
+□ cr = ClassicalRegister(5, 'c') creates classical register named 'c'
+□ qc = QuantumCircuit(qr, cr) creates circuit from registers
+□ qc = QuantumCircuit(qr1, qr2, cr) multiple registers allowed
+□ qc = QuantumCircuit() creates empty circuit
+□ qc.add_register(qr) adds register to existing circuit
+□ qc.add_register(cr) adds classical register
+□ qc.qubits returns list of Qubit objects
+□ qc.clbits returns list of Clbit objects
+□ qc.qregs returns list of QuantumRegister objects
+□ qc.cregs returns list of ClassicalRegister objects
+□ qc.name = 'my_circuit' sets circuit name
+□ qc.name returns circuit name (string)
+□ qc.global_phase = np.pi/4 sets global phase
+□ qc.metadata = {'key': 'value'} attaches metadata dict
+
+CIRCUIT PROPERTY PATTERNS:
+□ depth_value = qc.depth() returns int (METHOD with parentheses)
+□ size_value = qc.size() returns int (METHOD with parentheses)
+□ width_value = qc.width() returns int (METHOD with parentheses)
+□ num_q = qc.num_qubits returns int (PROPERTY - NO parentheses!)
+□ num_c = qc.num_clbits returns int (PROPERTY - NO parentheses!)
+□ num_p = qc.num_parameters returns int (PROPERTY - NO parentheses!)
+□ ops_dict = qc.count_ops() returns dict {'h': 2, 'cx': 3}
+□ total_gates = sum(qc.count_ops().values()) sum all gate counts
+□ qc.count_ops().get('cx', 0) safe access (0 if no CNOT)
+□ qc.decompose() returns decomposed circuit (breaks down complex gates)
+□ qc.decompose().depth() depth after decomposition
+□ qc.inverse() returns inverse circuit (reverse order, conjugate gates)
+□ qc.copy() creates deep copy of circuit
+□ qc.copy(name='new_name') copy with new name
+□ qc.clear() removes all instructions (empties circuit)
+□ qc.remove_final_measurements() removes measurements at end
+□ qc.remove_final_measurements(inplace=False) returns new circuit
+
+GATE APPLICATION PATTERNS:
+□ qc.h(0) applies Hadamard to qubit 0
+□ qc.h([0, 1, 2]) applies Hadamard to multiple qubits (parallel)
+□ qc.cx(0, 1) applies CNOT (control=0, target=1)
+□ qc.cx([0, 1], [1, 2]) applies multiple CNOTs: 0→1, 1→2
+□ qc.measure(0, 0) measures qubit 0 into classical bit 0
+□ qc.measure([0, 1], [0, 1]) measures multiple qubits
+□ qc.measure_all() adds measurements for all qubits
+□ qc.measure_all(inplace=False) returns new circuit with measurements
+□ qc.barrier() adds barrier across all qubits
+□ qc.barrier([0, 1]) barrier on specific qubits
+□ qc.reset(0) resets qubit 0 to |0⟩
+□ qc.reset([0, 1]) resets multiple qubits
+
+COMPOSITION PATTERNS:
+□ result = qc1.compose(qc2) sequential composition (qc2 after qc1)
+□ result = qc1.compose(qc2, inplace=False) returns NEW circuit (default)
+□ qc1.compose(qc2, inplace=True) modifies qc1 directly (no return)
+□ qc1.compose(qc2, qubits=[2, 3]) maps qc2 to specific qubits in qc1
+□ qc1.compose(qc2, qubits=[2, 3], clbits=[0]) maps quantum and classical
+□ qc1.compose(qc2, front=True) prepends qc2 BEFORE qc1
+□ qc1.compose(qc2, front=True, inplace=True) prepend and modify
+□ result = qc1.tensor(qc2) parallel composition (qc1 ⊗ qc2)
+□ result = qc1.tensor(qc2, inplace=False) returns NEW circuit (default)
+□ qc1.tensor(qc2, inplace=True) modifies qc1 directly
+□ qc.tensor(qc2) adds qc2's qubits after qc1's qubits
+□ from qiskit.circuit import Gate, Instruction
+□ custom_gate = Gate('mygate', num_qubits=2, params=[])
+□ qc.append(custom_gate, [0, 1]) adds custom gate
+□ qc.append(HGate(), [0]) adds Hadamard via append
+□ qc.append(CXGate(), [0, 1]) adds CNOT via append
+□ qc.append(instruction, qargs=[0], cargs=[0]) append with classical args
+
+PARAMETERIZED CIRCUIT PATTERNS:
+□ from qiskit.circuit import Parameter, ParameterVector
+□ theta = Parameter('θ') creates single parameter
+□ phi = Parameter('φ') creates another parameter
+□ params = ParameterVector('θ', 5) creates θ[0], θ[1], ..., θ[4]
+□ qc.rx(theta, 0) rotation gate with parameter
+□ qc.ry(2*theta, 0) parameter in expression
+□ qc.rz(theta + phi, 0) combines parameters
+□ import numpy as np
+□ qc.ry(np.pi*theta, 0) parameter with constant
+□ param_set = qc.parameters returns ParameterView (set-like)
+□ list(qc.parameters) converts to list
+□ len(qc.parameters) counts unbound parameters
+□ param_dict = {theta: 0.5, phi: 1.2} binding dictionary
+□ bound = qc.assign_parameters(param_dict) binds and returns new circuit
+□ bound = qc.assign_parameters({theta: 0.5}) partial binding allowed
+□ bound = qc.assign_parameters({params: [0.1, 0.2, 0.3, 0.4, 0.5]}) bind vector
+□ bound = qc.assign_parameters([0.1, 0.2], inplace=False) positional binding
+□ qc.assign_parameters(values, inplace=True) modifies circuit directly
+□ len(bound.parameters) == 0 check if fully bound
+□ qc.bind_parameters() DEPRECATED - use assign_parameters()
+□ from qiskit.circuit import ParameterExpression
+□ expr = 2*theta + np.sin(phi) complex parameter expression
+□ qc.ry(expr, 0) use expression as gate parameter
+
+CLASSICAL CONTROL PATTERNS (LEGACY):
+□ qc.measure(0, 0) measure first (condition needs measured value)
+□ qc.x(1).c_if(cr[0], 1) apply X if classical bit 0 is 1
+□ qc.h(0).c_if(cr, 3) apply H if classical register equals 3 (binary '11')
+□ qc.cx(0, 1).c_if(cr[1], 0) apply CNOT if bit 1 is 0
+□ gate_instruction = qc.x(0).c_if(cr, 1) returns instruction
+□ c_if syntax: gate.c_if(classical, value) - gate FIRST, condition second
+
+CLASSICAL CONTROL PATTERNS (MODERN):
+□ from qiskit.circuit.classical import expr
+□ qc.measure(0, 0) measure first
+□ with qc.if_test((cr[0], 1)): uses TUPLE (clbit, value)
+□     qc.x(1) applies X inside if block
+□ with qc.if_test((cr, 3)): register comparison (cr == 3)
+□     qc.h(0) operations in if block
+□ with qc.if_test((cr[0], 1)) as else_: if-else syntax
+□     qc.x(1) if branch
+□ with else_: else block
+□     qc.h(1) else branch
+□ condition = expr.logic_and(cr[0], cr[1]) create AND condition
+□ with qc.if_test(condition): use complex condition
+□     qc.x(0)
+□ condition = expr.equal(cr, 5) equality test
+□ condition = expr.not_equal(cr, 0) inequality test
+□ condition = expr.less(cr, 10) less than comparison
+□ condition = expr.greater(cr, 2) greater than comparison
+□ condition = expr.logic_or(cr[0], cr[1]) OR condition
+□ condition = expr.logic_not(cr[0]) NOT condition
+
+DYNAMIC CIRCUIT PATTERNS:
+□ with qc.for_loop(range(5)): fixed 5 iterations
+□     qc.h(0) operation repeated 5 times
+□ with qc.for_loop(range(3)) as i: loop with variable
+□     qc.rx(i*0.1, 0) use loop variable
+□ qc.measure(0, 0)
+□ with qc.while_loop((cr[0], 0)): loop while bit 0 is 0
+□     qc.h(0)
+□     qc.measure(0, 0) re-measure in loop
+□ with qc.switch(cr) as case: switch on register value
+□     with case(0): case for value 0
+□         qc.x(0)
+□     with case(1): case for value 1
+□         qc.h(0)
+□     with case(case.DEFAULT): default case
+□         qc.reset(0)
+□ qc.break_loop() exit loop early
+□ qc.continue_loop() skip to next iteration
+
+CIRCUIT LIBRARY PATTERNS:
 □ from qiskit.circuit.library import QFT, RealAmplitudes, EfficientSU2
-□ QFT(n) creates n-qubit Quantum Fourier Transform
-□ RealAmplitudes(n, reps=k) creates VQE ansatz with k layers
-□ EfficientSU2(n, reps=k) creates hardware-efficient ansatz
+□ from qiskit.circuit.library import TwoLocal, NLocal, PauliEvolutionGate
+□ qft = QFT(num_qubits=4) create 4-qubit QFT
+□ qft = QFT(4, do_swaps=True) QFT with bit reversal swaps (default)
+□ qft = QFT(4, do_swaps=False) QFT without swaps
+□ qft_inverse = qft.inverse() inverse QFT
+□ qc.append(qft, range(4)) append QFT to circuit
+□ ansatz = RealAmplitudes(num_qubits=3, reps=2) VQE ansatz
+□ ansatz = RealAmplitudes(3, reps=2, entanglement='linear') linear entanglement
+□ ansatz = RealAmplitudes(3, reps=2, entanglement='full') full entanglement
+□ print(ansatz.num_parameters) check parameter count
+□ bound_ansatz = ansatz.assign_parameters([0.1, 0.2, ...]) bind parameters
+□ ansatz = EfficientSU2(num_qubits=4, reps=3) hardware-efficient ansatz
+□ ansatz = EfficientSU2(4, su2_gates=['ry', 'rz']) custom single-qubit gates
+□ ansatz = EfficientSU2(4, entanglement='sca') sca entanglement pattern
+□ ansatz = TwoLocal(4, rotation_blocks='ry', entanglement_blocks='cx')
+□ ansatz = TwoLocal(4, ['ry', 'rz'], 'cz', reps=2) custom rotation/entangle
+□ from qiskit.circuit.library import PauliFeatureMap, ZFeatureMap
+□ feature_map = PauliFeatureMap(feature_dimension=2, reps=2)
+□ from qiskit.circuit.library import HGate, XGate, CXGate
+□ h_gate = HGate()
+□ qc.append(h_gate, [0])
+
+TRANSPILER PATTERNS:
+□ from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+□ from qiskit.transpiler import PassManager, CouplingMap
+□ from qiskit_ibm_runtime import QiskitRuntimeService
+□ service = QiskitRuntimeService()
+□ backend = service.backend('ibm_brisbane')
+□ pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
+□ pm = generate_preset_pass_manager(optimization_level=2, backend=backend) default
+□ pm = generate_preset_pass_manager(optimization_level=3, backend=backend) heavy
+□ pm = generate_preset_pass_manager(0, backend) level 0 (no optimization)
+□ transpiled = pm.run(qc) transpile circuit
+□ transpiled_circuits = pm.run([qc1, qc2, qc3]) batch transpilation
+□ pm = generate_preset_pass_manager(2, backend, layout_method='sabre')
+□ pm = generate_preset_pass_manager(2, backend, layout_method='vf2')
+□ pm = generate_preset_pass_manager(2, backend, layout_method='trivial')
+□ pm = generate_preset_pass_manager(2, backend, layout_method='dense')
+□ pm = generate_preset_pass_manager(2, backend, routing_method='sabre') default
+□ pm = generate_preset_pass_manager(2, backend, routing_method='stochastic')
+□ pm = generate_preset_pass_manager(2, backend, scheduling_method='asap')
+□ pm = generate_preset_pass_manager(2, backend, scheduling_method='alap') better
+□ pm = generate_preset_pass_manager(2, backend, seed_transpiler=42) reproducible
+□ pm = generate_preset_pass_manager(2, backend, approximation_degree=0.99)
+□ coupling_map = CouplingMap([[0,1], [1,2], [2,3]]) custom coupling
+□ pm = generate_preset_pass_manager(2, backend, coupling_map=coupling_map)
+□ from qiskit import transpile
+□ transpiled = transpile(qc, backend) simple transpile (uses defaults)
+□ transpiled = transpile(qc, backend, optimization_level=2)
+□ transpiled = transpile(qc, backend, basis_gates=['id','rz','sx','cx'])
+□ transpiled = transpile(qc, backend, coupling_map=coupling_map)
+□ transpiled = transpile(qc, backend, initial_layout=[0,1,3]) manual layout
+□ transpiled.depth() check transpiled depth
+□ transpiled.count_ops() check gate counts after transpilation
+□ print(transpiled.layout) view qubit layout
 ```
 
 ### ⚠️ Exam Trap Checklist
 ```
-□ TRAP: QuantumCircuit(2, 3) = 2 qubits, 3 classical (NOT 2 classical, 3 qubits!)
-□ TRAP: qc.num_qubits() with parentheses → ERROR! It's a property
-□ TRAP: qc.depth() returns int including measurements (they add depth!)
-□ TRAP: Parallel gates share layer: H on q0,q1,q2 = depth 1, not 3
-□ TRAP: qc1.compose(qc2) does NOT modify qc1 (returns new circuit)
-□ TRAP: compose() keeps same width (doesn't add qubits)
-□ TRAP: tensor() ADDS qubits (increases width)
-□ TRAP: qc.append(HGate(), 0) → ERROR! Must be list: [0]
-□ TRAP: Parameter('θ') twice creates TWO different parameters!
-□ TRAP: Same name ≠ same parameter (object identity matters)
-□ TRAP: bind_parameters() is DEPRECATED → use assign_parameters()
-□ TRAP: Running circuit with unbound parameters → ERROR!
-□ TRAP: qc.c_if(0, 1).x(1) → WRONG ORDER! Use qc.x(1).c_if(0, 1)
-□ TRAP: if_test without tuple: if_test(clbit, 1) → ERROR!
-  → Use: if_test((clbit, 1)) with parentheses for tuple
-□ TRAP: c_if register value is INTEGER: cr==3 means binary '11'
-□ TRAP: SWAP decomposes to 3 CNOTs (not 1 or 2!)
-□ TRAP: Higher optimization level ≠ always better (may be slower)
+CIRCUIT CREATION TRAPS:
+□ TRAP: QuantumCircuit(2, 3) = 2 QUBITS, 3 CLASSICAL BITS!
+  → Fix: Arguments are (qubits, classical) not (classical, qubits)
+  → Why: Q before C! Quantum first, classical second
+□ TRAP: QuantumCircuit(5) creates 5 qubits but 0 classical bits
+  → Fix: Add measurements or specify classical: QuantumCircuit(5, 5)
+  → Why: Classical bits not auto-created, must be explicit
+□ TRAP: Trying to measure without classical bits → ERROR!
+  → Fix: Create circuit with classical bits or use measure_all()
+  → Why: Measurements need classical bits to store results
+□ TRAP: Assuming qubits start in arbitrary states
+  → Fix: All qubits initialize to |0⟩ by default
+  → Why: Cannot specify initial state in constructor
+□ TRAP: Confusing register size with circuit width
+  → Fix: width = num_qubits + num_clbits (total wires)
+  → Why: Width includes both quantum and classical wires
+□ TRAP: Modifying circuit in place without realizing it
+  → Fix: Most methods have inplace parameter (default False)
+  → Why: qc.compose(qc2) returns new, qc.compose(qc2, inplace=True) modifies
+
+PROPERTY vs METHOD TRAPS:
+□ TRAP: qc.num_qubits() with parentheses → AttributeError!
+  → Fix: qc.num_qubits (NO parentheses - it's a PROPERTY)
+  → Why: Properties accessed without (), methods with ()
+□ TRAP: qc.num_clbits() with parentheses → AttributeError!
+  → Fix: qc.num_clbits (NO parentheses - it's a PROPERTY)
+  → Why: Same as num_qubits - property not method
+□ TRAP: qc.depth without parentheses → returns method object
+  → Fix: qc.depth() (WITH parentheses - it's a METHOD)
+  → Why: Methods need () to execute and return value
+□ TRAP: qc.size without parentheses → returns method object
+  → Fix: qc.size() (WITH parentheses - it's a METHOD)
+  → Why: Methods need () to execute
+□ TRAP: qc.width without parentheses → returns method object
+  → Fix: qc.width() (WITH parentheses - it's a METHOD)
+  → Why: Methods need () to execute
+□ TRAP: Mixing up which are properties and which are methods
+  → Fix: PROPERTIES: num_qubits, num_clbits, num_parameters (no ())
+  → Fix: METHODS: depth(), size(), width(), count_ops() (with ())
+  → Why: API design inconsistency - memorize which is which!
+
+DEPTH/SIZE/WIDTH CALCULATION TRAPS:
+□ TRAP: qc.depth() excludes measurements (wrong!)
+  → Fix: depth() INCLUDES measurements, barriers (all operations)
+  → Why: Measurements take time, contribute to critical path
+□ TRAP: Parallel gates add depth: H on q[0,1,2] = depth 3
+  → Fix: Parallel gates share ONE layer: depth = 1
+  → Why: Gates on different qubits execute simultaneously
+□ TRAP: Barrier gates add to depth count
+  → Fix: Barriers have zero duration (don't add to depth)
+  → Why: Barriers are compiler hints, not physical operations
+□ TRAP: Empty circuit has non-zero depth
+  → Fix: Empty circuit: depth=0, size=0, width=0
+  → Why: No operations = zero critical path length
+□ TRAP: count_ops() includes parameter information
+  → Fix: count_ops() only counts gate types, ignores parameters
+  → Why: Returns {'h': 2, 'rx': 3} not parameter values
+
+COMPOSITION TRAPS:
+□ TRAP: qc1.compose(qc2) modifies qc1 directly
+  → Fix: compose() returns NEW circuit (default inplace=False)
+  → Why: Functional programming style - immutable by default
+□ TRAP: compose() ADDS qubits (increases width)
+  → Fix: compose() uses SAME qubits (width unchanged)
+  → Why: Sequential execution on existing qubits
+□ TRAP: tensor() uses SAME qubits (width unchanged)
+  → Fix: tensor() ADDS qubits (width increases)
+  → Why: Parallel composition creates independent subsystems
+□ TRAP: compose(qc2, front=False) prepends qc2
+  → Fix: front=False APPENDS qc2 after qc1 (default)
+  → Why: front=True prepends, front=False appends
+□ TRAP: Forgetting to specify target qubits in compose
+  → Fix: compose(qc2, qubits=[2,3]) maps to specific qubits
+  → Why: Default uses qubits in order [0,1,2,...]
+□ TRAP: qc1.tensor(qc2) and qc2.tensor(qc1) are the same
+  → Fix: Order matters! qc1⊗qc2 ≠ qc2⊗qc1 (qubit ordering differs)
+  → Why: qc1's qubits come first, then qc2's qubits
+□ TRAP: Using + operator for composition
+  → Fix: Use .compose() method explicitly
+  → Why: + operator not defined for QuantumCircuit
+
+APPEND TRAPS:
+□ TRAP: qc.append(HGate(), 0) → TypeError!
+  → Fix: qc.append(HGate(), [0]) - qubits must be LIST
+  → Why: append expects list even for single qubit
+□ TRAP: qc.append(CXGate(), [0]) → Wrong number of qubits!
+  → Fix: qc.append(CXGate(), [0, 1]) - CNOT needs 2 qubits
+  → Why: Gate requires specific number of qubits
+□ TRAP: append() returns None (can't chain)
+  → Fix: append() modifies circuit in place (returns None)
+  → Why: Unlike compose(), append is always in-place
+□ TRAP: Using wrong gate import
+  → Fix: from qiskit.circuit.library import HGate, CXGate
+  → Why: Gates in qiskit.circuit.library, not main qiskit
+
+PARAMETER TRAPS:
+□ TRAP: Parameter('θ') twice creates SAME parameter
+  → Fix: Parameter('θ') twice creates TWO DIFFERENT parameters!
+  → Why: Object identity matters, not string name equality
+□ TRAP: Checking parameter equality with == operator
+  → Fix: Parameter identity based on object, not name
+  → Why: theta1 = Parameter('θ'), theta2 = Parameter('θ') → theta1 ≠ theta2
+□ TRAP: Parameters with same name can be bound independently (wrong!)
+  → Fix: Each Parameter object needs separate binding
+  → Why: assign_parameters uses object as dict key, not name
+□ TRAP: bind_parameters() is current API
+  → Fix: bind_parameters() is DEPRECATED, use assign_parameters()
+  → Why: API modernization, bind_parameters removed in newer versions
+□ TRAP: Running circuit with unbound parameters executes anyway
+  → Fix: Unbound parameters → ERROR at runtime!
+  → Why: Hardware/simulator needs concrete angle values
+□ TRAP: len(qc.parameters) counts individual parameters only (wrong!)
+  → Fix: len(qc.parameters) counts total unbound parameters
+  → Why: ParameterVector elements counted separately
+□ TRAP: assign_parameters modifies circuit in place
+  → Fix: assign_parameters returns NEW circuit (default inplace=False)
+  → Why: Immutable pattern - original circuit unchanged
+□ TRAP: Partial binding not allowed
+  → Fix: Partial binding IS allowed! Bind subset of parameters
+  → Why: Can bind parameters in multiple steps
+□ TRAP: ParameterVector('θ', 3) creates single parameter
+  → Fix: Creates 3 parameters: θ[0], θ[1], θ[2]
+  → Why: Vector notation for indexed parameters
+□ TRAP: Forgetting to bind parameters before transpilation
+  → Fix: Transpiler requires fully bound circuit (no free parameters)
+  → Why: Transpiler needs concrete values for optimization
+
+CLASSICAL CONTROL TRAPS:
+□ TRAP: qc.c_if(0, 1).x(1) → Wrong method order!
+  → Fix: qc.x(1).c_if(0, 1) - GATE first, CONDITION second
+  → Why: c_if is method on gate instruction, not circuit
+□ TRAP: if_test without tuple: if_test(clbit, 1)
+  → Fix: if_test((clbit, 1)) - needs TUPLE with parentheses
+  → Why: API requires tuple for condition specification
+□ TRAP: c_if register value interpreted as array
+  → Fix: Register value is INTEGER: cr==3 means binary '11'
+  → Why: Register bits combined into single integer value
+□ TRAP: Not measuring before conditional execution
+  → Fix: Must measure BEFORE c_if/if_test
+  → Why: Conditional needs measured value to evaluate
+□ TRAP: Assuming c_if() is modern API
+  → Fix: c_if() is LEGACY (deprecated), if_test() is MODERN
+  → Why: Know both for exam! Transition period
+□ TRAP: if_test() supports else without special syntax
+  → Fix: Need 'as else_:' syntax for else block
+  → Why: with qc.if_test((clbit, 1)) as else_:
+□ TRAP: Using expr module without import
+  → Fix: from qiskit.circuit.classical import expr
+  → Why: Complex conditions require expr module
+□ TRAP: Bit indexing confusion: cr[0] vs cr[1]
+  → Fix: cr[0] is LSB (least significant bit)
+  → Why: Little-endian convention in Qiskit
+□ TRAP: Conditional gates always execute (wrong!)
+  → Fix: Conditional gates only execute if condition TRUE
+  → Why: That's the point of conditionals!
+□ TRAP: Conditionals don't add to depth
+  → Fix: Conditionals DO add to depth (branch evaluation time)
+  → Why: Runtime evaluation and potential execution
+
+DYNAMIC CIRCUIT TRAPS:
+□ TRAP: for_loop without range: for_loop(5)
+  → Fix: for_loop(range(5)) - needs range object
+  → Why: Syntax follows Python conventions
+□ TRAP: while_loop condition without tuple
+  → Fix: while_loop((clbit, value)) - needs TUPLE
+  → Why: Same tuple requirement as if_test
+□ TRAP: while_loop without measurement in loop body → infinite loop!
+  → Fix: Must re-measure inside loop to update condition
+  → Why: Condition based on classical bit value
+□ TRAP: switch cases overlap or conflict
+  → Fix: Each case should be distinct value
+  → Why: Switch branches to first matching case
+□ TRAP: Using break/continue outside loop context
+  → Fix: break_loop() and continue_loop() only valid inside loops
+  → Why: Loop control flow only meaningful in loop
+□ TRAP: Assuming all backends support dynamic circuits
+  → Fix: Dynamic circuits require hardware support (not universal)
+  → Why: Feature availability depends on backend capabilities
+□ TRAP: Loop variable type confusion
+  → Fix: Loop variable in for_loop is Parameter (symbolic)
+  → Why: for_loop(range(n)) as i → i is Parameter object
+
+CIRCUIT LIBRARY TRAPS:
+□ TRAP: QFT(4) returns transpiled circuit ready to run
+  → Fix: Library circuits are LOGICAL (need transpilation)
+  → Why: Still need to map to hardware basis gates
+□ TRAP: Library circuits have no parameters
+  → Fix: Most library circuits (ansätze) are PARAMETERIZED
+  → Why: Must bind parameters before execution
+□ TRAP: RealAmplitudes covers full unitary space
+  → Fix: RealAmplitudes only covers REAL amplitudes (no complex phase)
+  → Why: Name says it all - "Real" amplitudes
+□ TRAP: EfficientSU2 is most general ansatz
+  → Fix: EfficientSU2 is hardware-efficient, not most expressive
+  → Why: Optimized for specific hardware, not full SU(2^n)
+□ TRAP: Forgetting to check num_parameters for library circuits
+  → Fix: ansatz.num_parameters tells you how many values to bind
+  → Why: Different reps values change parameter count
+□ TRAP: QFT inverse is QFT with different parameters
+  → Fix: QFT inverse is CIRCUIT inverse (reverse + conjugate)
+  → Why: qft.inverse() gives QFT†
+
+TRANSPILER TRAPS:
+□ TRAP: SWAP decomposes to 1 or 2 CNOTs
+  → Fix: Each SWAP = 3 CNOT gates (expensive!)
+  → Why: SWAP(a,b) = CX(a,b) + CX(b,a) + CX(a,b)
+□ TRAP: Transpiler works without backend specification
+  → Fix: Transpiler NEEDS backend for realistic results
+  → Why: Backend provides coupling map + basis gates
+□ TRAP: Optimization level 3 always best
+  → Fix: Level 3 takes LONGER, not always better quality
+  → Why: Diminishing returns, increased compilation time
+□ TRAP: Optimization level 0 uses advanced layout
+  → Fix: Level 0 uses TrivialLayout (q[i]→i, no optimization)
+  → Why: Level 0 means NO optimization
+□ TRAP: Scheduled circuits ready to execute normally
+  → Fix: Scheduled circuits have Delay instructions (timing info)
+  → Why: Scheduling adds pulse-level timing details
+□ TRAP: VF2Layout always succeeds
+  → Fix: VF2Layout may FAIL on large circuits (no perfect layout)
+  → Why: Graph isomorphism problem can be hard
+□ TRAP: ASAP scheduling better than ALAP
+  → Fix: ALAP scheduling BETTER for decoherence
+  → Why: ALAP minimizes idle time before measurement
+□ TRAP: Translation stage handles any gate
+  → Fix: Translation requires gates in basis set or decomposable
+  → Why: Must specify valid basis gates for hardware
+□ TRAP: Routing always finds optimal SWAP insertion
+  → Fix: Routing is HEURISTIC (may not be optimal)
+  → Why: Optimal routing is NP-hard problem
+□ TRAP: Transpilation deterministic without seed
+  → Fix: Use seed_transpiler for reproducibility
+  → Why: Heuristics have randomness (different runs vary)
+□ TRAP: Higher optimization level reduces depth
+  → Fix: Level 3 may INCREASE depth in some cases
+  → Why: Optimization targets gate count, not always depth
+□ TRAP: Layout methods all produce same quality
+  → Fix: VF2 best quality, Sabre best scalability, Trivial no optimization
+  → Why: Different algorithms, different tradeoffs
+□ TRAP: Coupling map optional for transpilation
+  → Fix: Coupling map REQUIRED for routing stage
+  → Why: Routing needs to know which qubits connect
+□ TRAP: Basis gates can be inferred from circuit
+  → Fix: Basis gates must be SPECIFIED (from backend or explicit)
+  → Why: Transpiler needs to know target gate set
+□ TRAP: Init stage only handles 3-qubit gates
+  → Fix: Init handles ALL gates with 3+ qubits
+  → Why: Unroll3qOrMore breaks down any high-qubit-count gates
+□ TRAP: Transpiled circuit has same depth as original
+  → Fix: Transpiled circuit usually has GREATER depth (SWAPs added)
+  → Why: Routing and decomposition increase operation count
+
+DEPRECATED API TRAPS:
+□ TRAP: Using bind_parameters() in modern code
+  → Fix: Use assign_parameters() instead
+  → Why: bind_parameters() deprecated and removed
+□ TRAP: Using qiskit.compiler.transpile from old import
+  → Fix: from qiskit import transpile (modern import)
+  → Why: Import location changed in recent versions
+□ TRAP: Using add_bits() instead of add_register()
+  → Fix: Both valid, but add_register() cleaner for multiple bits
+  → Why: API provides both options
 ```
 
 ### 🧠 Mnemonic Recall Box
@@ -2081,41 +2667,197 @@ Remember: Each SWAP = 3 CNOTs!
 │ 🔤 "Q before C"                                                  │
 │    QuantumCircuit(Qubits, Classical)                            │
 │    First argument = qubits, second = classical bits             │
+│    Think: "Quantum Questions Come first, Classical second"      │
+│    QuantumCircuit(3, 2) = 3 qubits, 2 classical (not reverse!) │
 │                                                                  │
 │ 📏 "Width=Wires, Depth=Delays, Size=Sum"                        │
-│    Width: Total wires (qubits + classical bits)                 │
+│    Width: Total wires (qubits + classical bits counted)         │
 │    Depth: Longest path (critical path with delays)              │
-│    Size: Sum of all operations                                  │
+│    Size: Sum of all operations (total count)                    │
+│    Think: "WDS = Wires, Delays, Sum"                            │
+│    width() with (), but num_qubits without ()!                  │
 │                                                                  │
-│ 🔗 "Compose = Continue, Tensor = Together"                       │
+│ 🔗 "Compose = Continue, Tensor = Together-separate"              │
 │    compose(): Continue on SAME qubits (sequential →)            │
 │    tensor(): Together but SEPARATE qubits (parallel ⊗)          │
+│    Think: "Compose chains, Tensor pairs"                        │
+│    compose doesn't add qubits, tensor does!                     │
+│    compose: qc1 then qc2 on same wires                          │
+│    tensor: qc1 and qc2 side-by-side (new wires)                 │
 │                                                                  │
-│ 📝 "Parameters are Placeholders"                                 │
+│ 🔀 "Inplace=True → Changes Original"                             │
+│    inplace=False returns NEW circuit (default)                  │
+│    inplace=True modifies ORIGINAL circuit                       │
+│    Think: "True = Transforms in place"                          │
+│    compose/tensor/assign_parameters all have inplace param      │
+│                                                                  │
+│ 📝 "Parameters are Placeholders (like algebra variables)"        │
 │    Like x in algebra - holds spot for real value                │
-│    Won't execute until bound                                    │
+│    Won't execute until bound (needs concrete value)             │
+│    Think: "Parameter = Pending value"                           │
+│    Must assign before running on hardware!                      │
 │                                                                  │
-│ ✍️ "Assign = Attach values"                                      │
+│ ✍️ "Assign = Attach actual values"                               │
 │    assign_parameters() attaches concrete numbers                │
-│    Creates runnable circuit                                     │
+│    Creates runnable circuit (executable)                        │
+│    Think: "Assign = Actually Set Specific numbers"              │
+│    bind_parameters() is OLD (deprecated!)                       │
 │                                                                  │
-│ 👄 "Methods have Mouths (parentheses), Properties are Plain"     │
-│    depth() - mouth (parentheses) = method                       │
-│    num_qubits - plain (no parentheses) = property               │
+│ 👄 "Methods have Mouths (), Properties are Plain"                │
+│    depth() - mouth (parentheses) = method CALL                  │
+│    num_qubits - plain (no parentheses) = property ACCESS        │
+│    Think: "Call with (), Access without ()"                     │
+│    METHODS: depth(), size(), width(), count_ops()               │
+│    PROPERTIES: num_qubits, num_clbits, num_parameters           │
 │                                                                  │
 │ 🎯 "Gate first, then Condition"                                  │
-│    qc.x(1).c_if(0, 1) - NOT qc.c_if(0, 1).x(1)                 │
+│    qc.x(1).c_if(0, 1) - gate THEN condition                     │
+│    NOT qc.c_if(0, 1).x(1) - wrong order!                        │
+│    Think: "Gate Goes first, Condition checks if"                │
+│    c_if is method ON the gate instruction                       │
 │                                                                  │
-│ 📦 "append needs List"                                           │
-│    qc.append(gate, [qubits]) - qubits in list!                  │
+│ 📦 "append needs List (even for one)"                            │
+│    qc.append(gate, [qubits]) - qubits in LIST always!           │
+│    qc.append(HGate(), [0]) not HGate(), 0                       │
+│    Think: "append Array (list of qubits)"                       │
+│    Single qubit still needs [0] not just 0                      │
 │                                                                  │
-│ 🔄 "SWAP = 3 CX"                                                 │
-│    Each SWAP decomposes to 3 CNOTs                              │
-│    Routing is EXPENSIVE!                                        │
+│ 🔄 "SWAP = 3 CX = Super eXpensive"                               │
+│    Each SWAP decomposes to 3 CNOT gates                         │
+│    Routing is EXPENSIVE! Minimize SWAPs                          │
+│    Think: "SWAP Consumes three CX gates"                        │
+│    Good layout reduces SWAPs (critical for performance)         │
 │                                                                  │
-│ 🔢 "Same Name ≠ Same Parameter"                                  │
-│    Parameter('θ') twice = TWO different parameters              │
+│ 🔢 "Same Name ≠ Same Parameter (object identity)"                │
+│    Parameter('θ') twice = TWO different parameter objects       │
 │    Object identity matters, not string name                     │
+│    Think: "Twins with same name are still different people"     │
+│    Each Parameter() call creates NEW object                     │
+│                                                                  │
+│ 🎭 "c_if: Gate.Condition (gate first, if second)"               │
+│    qc.x(1).c_if(0, 1) - gate method, then condition             │
+│    NOT qc.c_if(...).x(...) - backwards!                         │
+│    Think: "Do X, Check IF condition"                            │
+│    Legacy API but still on exam!                                │
+│                                                                  │
+│ 🎯 "if_test needs Tuple (parentheses inside)"                    │
+│    with qc.if_test((clbit, value)): - TUPLE required!           │
+│    Think: "Tuple To test"                                       │
+│    if_test((cr[0], 1)) NOT if_test(cr[0], 1)                    │
+│    Modern API, replaces c_if()                                  │
+│                                                                  │
+│ 📏 "Register Value = Integer (not bit array)"                    │
+│    cr == 3 means binary '11' (both bits set)                    │
+│    Not individual bit values cr[0]=1, cr[1]=1                   │
+│    Think: "Register = Right-to-left Integer"                    │
+│    cr[0] is LSB (rightmost), cr[1] is next bit                  │
+│                                                                  │
+│ 🔧 "Measure BEFORE conditional (need value first)"               │
+│    Must measure BEFORE c_if/if_test                             │
+│    Think: "Measure, then Maybe execute"                         │
+│    Condition needs measured value to evaluate                   │
+│    No measurement = no condition value = error!                 │
+│                                                                  │
+│ 🏗️ "6-Stage Pipeline: ILRTOS"                                   │
+│    Init → Layout → Routing → Translation → Optimization → Scheduling│
+│    "I Love Routing Through Optimized Systems"                   │
+│    Think: "Compiler Pipeline = 6 sequential stages"             │
+│    Each stage builds on previous (order matters!)               │
+│                                                                  │
+│ 🔄 "SWAP = 3 CNOTs (remember the cost!)"                         │
+│    Each SWAP inserted = 3 CNOT gates                            │
+│    Minimize non-adjacent 2-qubit gates!                         │
+│    Think: "SWAP = Super Wasteful (3x cost)"                     │
+│    Good layout = fewer SWAPs = faster circuit                   │
+│                                                                  │
+│ 🎚️ "Level 0-3: None → Light → Medium → Heavy"                   │
+│    Optimization level: 0=none, 1=light, 2=medium, 3=heavy       │
+│    Higher = more optimization BUT slower compilation            │
+│    Think: "Higher level = Heavier work"                         │
+│    Level 0: TrivialLayout, Level 1+: SabreLayout                │
+│    Level 3 doesn't always mean better results!                  │
+│                                                                  │
+│ ⏰ "ASAP/ALAP = Soon/Late (timing matters)"                      │
+│    ASAP: As Soon As Possible (minimize idle at start)           │
+│    ALAP: As Late As Possible (minimize idle at end)             │
+│    Think: "ALAP = Almost Late = better for decoherence"         │
+│    ALAP better: gates execute closer to measurement             │
+│    Less time for decoherence to affect results                  │
+│                                                                  │
+│ 📍 "Layout = Location (which physical qubit?)"                   │
+│    Layout maps logical qubits → physical qubits                 │
+│    Think: "Layout = Location assignment"                        │
+│    TrivialLayout: q[i]→i (simple, no optimization)              │
+│    VF2Layout: Perfect graph matching (best but slow)            │
+│    SabreLayout: Heuristic (good balance, default)               │
+│    DenseLayout: Pack connected qubits together                  │
+│                                                                  │
+│ 🗺️ "Routing = Road-building (insert SWAPs)"                      │
+│    Routing inserts SWAP gates for non-adjacent qubits           │
+│    Think: "Routing = Roads between qubits"                      │
+│    Needed when 2-qubit gate spans disconnected qubits           │
+│    SabreSwap: Heuristic routing (default)                       │
+│    StochasticSwap: Random search routing                        │
+│                                                                  │
+│ 🔀 "Translation = Transform to basis gates"                      │
+│    Translation converts all gates to hardware basis             │
+│    Think: "Translation = Transform Language"                    │
+│    From logical gates → hardware-native gates                   │
+│    Basis gates example: ['id','rz','sx','x','cx']               │
+│                                                                  │
+│ 🎨 "front=True → Prepend (add to front)"                         │
+│    compose(qc2, front=True) adds qc2 BEFORE qc1                 │
+│    front=False adds qc2 AFTER qc1 (default)                     │
+│    Think: "front=True → Front of line"                          │
+│    front parameter controls insertion position                  │
+│                                                                  │
+│ 🔑 "ParameterVector = Parallel Parameters"                       │
+│    ParameterVector('θ', 5) creates θ[0] through θ[4]            │
+│    Think: "Vector = array of indexed parameters"                │
+│    Efficient for ansätze with many parameters                   │
+│    All elements are separate Parameter objects                  │
+│                                                                  │
+│ 📊 "Parallel gates = One depth layer"                            │
+│    Gates on different qubits execute simultaneously             │
+│    H on q[0,1,2] = depth 1, not 3!                              │
+│    Think: "Parallel = Same time = same layer"                   │
+│    Sequential gates increase depth                              │
+│                                                                  │
+│ 🚫 "Barrier = Zero depth (just a hint)"                          │
+│    Barrier gates don't add to circuit depth                     │
+│    Think: "Barrier = Boundary marker (not an operation)"        │
+│    Used for compiler hints, visualization                       │
+│    No physical gate, no time cost                               │
+│                                                                  │
+│ 🔄 "inverse() = Reverse + Conjugate"                             │
+│    qc.inverse() reverses order AND conjugates gates             │
+│    Think: "inverse = Undo circuit (reverse time)"               │
+│    U†: reverse gate order + take gate adjoint                   │
+│    Useful for uncomputing, QFT† patterns                        │
+│                                                                  │
+│ 📚 "Library circuits = Logical (need transpile)"                 │
+│    Circuit library gates not hardware-ready yet                 │
+│    Think: "Library = blueprint (not built yet)"                 │
+│    Must transpile before running on backend                     │
+│    QFT, RealAmplitudes, EfficientSU2 all need transpilation     │
+│                                                                  │
+│ 🎯 "RealAmplitudes = Real only (no complex phase)"               │
+│    RealAmplitudes ansatz has only real amplitudes               │
+│    Think: "Real = no imaginary part"                            │
+│    Uses RY rotations (real), not general rotations              │
+│    Less expressive but hardware-efficient                       │
+│                                                                  │
+│ ⚡ "EfficientSU2 = Efficient for hardware"                        │
+│    EfficientSU2 optimized for hardware basis gates              │
+│    Think: "Efficient = Easy for hardware"                       │
+│    Uses RY + RZ (both in basis sets)                            │
+│    Covers full SU(2) single-qubit space                         │
+│                                                                  │
+│ 🎛️ "TwoLocal = Tunable (rotation + entanglement)"               │
+│    TwoLocal lets you customize rotation and entanglement        │
+│    Think: "Two = Two types (rotation + entangle)"               │
+│    Specify rotation_blocks and entanglement_blocks              │
+│    Most flexible ansatz template                                │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -2127,48 +2869,260 @@ Remember: Each SWAP = 3 CNOTs!
 ║              (18% of Exam - HIGHEST WEIGHT! ~12 Questions)            ║
 ╠═══════════════════════════════════════════════════════════════════════╣
 ║                                                                        ║
-║  🏗️ CIRCUIT CREATION                                                   ║
-║  ├─ QuantumCircuit(n_qubits, n_clbits) - Q before C!                  ║
-║  ├─ QuantumCircuit(qr, cr) - with named registers                     ║
-║  └─ QuantumRegister(n, 'name'), ClassicalRegister(n, 'name')          ║
+║  🏗️ CIRCUIT CREATION FUNDAMENTALS                                      ║
+║  ├─ BASIC CREATION                                                     ║
+║  │  ├─ QuantumCircuit(n_qubits, n_clbits) - Q before C! (trap!)      ║
+║  │  ├─ QuantumCircuit(3, 2) = 3 qubits, 2 classical bits              ║
+║  │  ├─ QuantumCircuit(qr, cr) - with named registers                  ║
+║  │  ├─ qr = QuantumRegister(5, 'q') named quantum register            ║
+║  │  ├─ cr = ClassicalRegister(5, 'c') named classical register        ║
+║  │  └─ All qubits initialize to |0⟩ (cannot specify initial state)    ║
+║  ├─ REGISTER MANAGEMENT                                                ║
+║  │  ├─ qc.add_register(qr) adds register to existing circuit          ║
+║  │  ├─ qc.qubits returns list of Qubit objects                        ║
+║  │  ├─ qc.clbits returns list of Clbit objects                        ║
+║  │  ├─ qc.qregs returns list of QuantumRegister objects               ║
+║  │  └─ qc.cregs returns list of ClassicalRegister objects             ║
+║  └─ CIRCUIT METADATA                                                   ║
+║     ├─ qc.name = 'my_circuit' sets circuit name                       ║
+║     ├─ qc.global_phase = np.pi/4 sets global phase                    ║
+║     └─ qc.metadata = {'key': 'value'} attaches metadata               ║
 ║                                                                        ║
-║  📏 CIRCUIT PROPERTIES                                                 ║
-║  ├─ depth() = longest path (METHOD with parentheses)                  ║
-║  ├─ size() = total operations (METHOD with parentheses)               ║
-║  ├─ width() = total wires (METHOD with parentheses)                   ║
-║  ├─ num_qubits = qubit count (PROPERTY - NO parentheses!)             ║
-║  └─ count_ops() = gate counts dict {'h': 1, 'cx': 2}                  ║
+║  📏 CIRCUIT PROPERTIES & METRICS                                       ║
+║  ├─ METHODS (require parentheses!)                                     ║
+║  │  ├─ depth() = longest path through circuit (critical path)         ║
+║  │  │   └─ Includes measurements, barriers count as 0                 ║
+║  │  │   └─ Parallel gates share ONE layer (same depth)                ║
+║  │  ├─ size() = total operation count (gates + measurements)          ║
+║  │  │   └─ Counts all instructions including barriers                 ║
+║  │  ├─ width() = total wires (num_qubits + num_clbits)                ║
+║  │  └─ count_ops() = dict of gate types {'h': 2, 'cx': 3}             ║
+║  │      └─ Does NOT include parameter values                          ║
+║  ├─ PROPERTIES (NO parentheses!)                                       ║
+║  │  ├─ num_qubits = qubit count (TRAP: no parentheses!)               ║
+║  │  ├─ num_clbits = classical bit count (TRAP: no parentheses!)       ║
+║  │  └─ num_parameters = unbound parameter count (property)            ║
+║  └─ CIRCUIT MANIPULATION                                               ║
+║     ├─ qc.decompose() breaks down complex gates                       ║
+║     ├─ qc.inverse() returns circuit inverse (reverse + conjugate)     ║
+║     ├─ qc.copy() creates deep copy                                    ║
+║     ├─ qc.clear() removes all instructions                            ║
+║     └─ qc.remove_final_measurements() removes end measurements        ║
 ║                                                                        ║
-║  🔗 COMPOSITION METHODS                                                ║
-║  ├─ compose(qc2) = sequential, SAME qubits (width unchanged)          ║
-║  │   └─ front=True, inplace=True, qubits=[...] options                ║
-║  ├─ tensor(qc2) = parallel, ADDS qubits (width increases)             ║
-║  └─ append(gate, [qubits]) = single operation (LIST required!)        ║
+║  🔗 COMPOSITION & COMBINATION                                          ║
+║  ├─ COMPOSE (Sequential - SAME qubits)                                 ║
+║  │  ├─ result = qc1.compose(qc2) sequential combination               ║
+║  │  ├─ qc1.compose(qc2, inplace=True) modifies qc1 directly           ║
+║  │  ├─ qc1.compose(qc2, qubits=[2,3]) maps to specific qubits         ║
+║  │  ├─ qc1.compose(qc2, front=True) prepends qc2 before qc1           ║
+║  │  ├─ Width unchanged (uses existing qubits)                         ║
+║  │  └─ TRAP: compose() returns NEW circuit (default inplace=False)    ║
+║  ├─ TENSOR (Parallel - ADDS qubits)                                    ║
+║  │  ├─ result = qc1.tensor(qc2) parallel combination (qc1 ⊗ qc2)      ║
+║  │  ├─ qc1.tensor(qc2, inplace=True) modifies qc1 directly            ║
+║  │  ├─ Width increases (adds qc2.num_qubits + qc2.num_clbits)         ║
+║  │  ├─ Creates independent subsystems (no interaction)                ║
+║  │  └─ qc2's qubits added after qc1's qubits                          ║
+║  └─ APPEND (Single operation)                                          ║
+║     ├─ qc.append(gate, [qubits]) adds single gate                     ║
+║     ├─ TRAP: qubits must be LIST even for single qubit!               ║
+║     ├─ qc.append(HGate(), [0]) correct syntax                         ║
+║     ├─ qc.append(CXGate(), [0, 1]) two-qubit gate                     ║
+║     └─ append() modifies in place (returns None)                      ║
 ║                                                                        ║
 ║  🎛️ PARAMETERIZED CIRCUITS                                             ║
-║  ├─ theta = Parameter('θ') creates symbolic variable                  ║
-║  ├─ params = ParameterVector('θ', n) creates θ[0]...θ[n-1]            ║
-║  ├─ qc.assign_parameters({theta: 0.5}) binds value                    ║
-║  ├─ qc.parameters returns set of unbound parameters                   ║
-║  └─ len(qc.parameters) == 0 when fully bound                          ║
+║  ├─ PARAMETER CREATION                                                 ║
+║  │  ├─ theta = Parameter('θ') creates symbolic parameter              ║
+║  │  ├─ params = ParameterVector('θ', n) creates θ[0]...θ[n-1]         ║
+║  │  ├─ TRAP: Parameter('θ') twice = TWO different objects!            ║
+║  │  └─ Object identity matters, not name equality                     ║
+║  ├─ PARAMETER USAGE                                                    ║
+║  │  ├─ qc.rx(theta, 0) gate with parameter                            ║
+║  │  ├─ qc.ry(2*theta, 0) parameter expressions allowed                ║
+║  │  ├─ qc.rz(theta + phi, 0) combine parameters                       ║
+║  │  └─ Complex expressions: sin(theta), cos(phi), theta**2            ║
+║  ├─ PARAMETER BINDING                                                  ║
+║  │  ├─ bound = qc.assign_parameters({theta: 0.5}) bind single         ║
+║  │  ├─ bound = qc.assign_parameters({params: [0.1, 0.2, ...]})        ║
+║  │  ├─ bound = qc.assign_parameters(values, inplace=False) default    ║
+║  │  ├─ Partial binding allowed (bind subset of parameters)            ║
+║  │  ├─ TRAP: bind_parameters() is DEPRECATED!                         ║
+║  │  └─ Must bind before execution (hardware needs concrete values)    ║
+║  └─ PARAMETER INSPECTION                                               ║
+║     ├─ qc.parameters returns ParameterView (set-like)                 ║
+║     ├─ len(qc.parameters) counts unbound parameters                   ║
+║     ├─ len(qc.parameters) == 0 means fully bound                      ║
+║     └─ Used for VQE, QAOA, variational algorithms                     ║
 ║                                                                        ║
-║  📚 CIRCUIT LIBRARY                                                    ║
-║  ├─ QFT(n) - Quantum Fourier Transform                                ║
-║  ├─ RealAmplitudes(n, reps) - VQE ansatz (RY + CNOT)                  ║
-║  ├─ EfficientSU2(n, reps) - Hardware-efficient (RY + RZ + CNOT)       ║
-║  └─ TwoLocal(n, rotation, entanglement) - Customizable ansatz         ║
+║  🔀 CLASSICAL CONTROL (LEGACY c_if)                                    ║
+║  ├─ SYNTAX & USAGE                                                     ║
+║  │  ├─ qc.x(1).c_if(cr[0], 1) - gate FIRST, condition second          ║
+║  │  ├─ TRAP: qc.c_if(0,1).x(1) WRONG ORDER!                           ║
+║  │  ├─ qc.h(0).c_if(cr, 3) register comparison (cr==3)                ║
+║  │  └─ Must measure BEFORE c_if (condition needs value)               ║
+║  ├─ REGISTER INTERPRETATION                                            ║
+║  │  ├─ Register value is INTEGER (binary representation)              ║
+║  │  ├─ cr==3 means binary '11' (both bits set)                        ║
+║  │  ├─ cr[0] is LSB (least significant bit)                           ║
+║  │  └─ Little-endian bit ordering                                     ║
+║  └─ STATUS                                                             ║
+║     ├─ c_if() is LEGACY (deprecated but exam-relevant!)               ║
+║     └─ Replaced by modern if_test() API                               ║
 ║                                                                        ║
-║  🔀 CLASSICAL CONTROL                                                  ║
-║  ├─ qc.x(1).c_if(clbit, value) - legacy conditional                   ║
-║  ├─ with qc.if_test((clbit, value)): - modern (TUPLE required!)       ║
-║  └─ for_loop, while_loop, switch - dynamic circuits                   ║
+║  🔀 CLASSICAL CONTROL (MODERN if_test)                                 ║
+║  ├─ BASIC IF                                                           ║
+║  │  ├─ from qiskit.circuit.classical import expr                      ║
+║  │  ├─ with qc.if_test((cr[0], 1)): - TUPLE required!                 ║
+║  │  │      qc.x(1) - operations in if block                           ║
+║  │  ├─ TRAP: if_test(cr[0], 1) without tuple → ERROR!                 ║
+║  │  └─ with qc.if_test((cr, 3)): register comparison                  ║
+║  ├─ IF-ELSE                                                            ║
+║  │  ├─ with qc.if_test((cr[0], 1)) as else_:                          ║
+║  │  │      qc.x(1) - if branch                                        ║
+║  │  ├─ with else_: - else block                                       ║
+║  │  │      qc.h(1) - else branch                                      ║
+║  │  └─ TRAP: Need 'as else_:' syntax for else block!                  ║
+║  └─ COMPLEX CONDITIONS                                                 ║
+║     ├─ condition = expr.logic_and(cr[0], cr[1]) AND                   ║
+║     ├─ condition = expr.logic_or(cr[0], cr[1]) OR                     ║
+║     ├─ condition = expr.logic_not(cr[0]) NOT                          ║
+║     ├─ condition = expr.equal(cr, 5) equality                         ║
+║     ├─ condition = expr.less(cr, 10) less than                        ║
+║     └─ with qc.if_test(condition): use complex condition              ║
 ║                                                                        ║
-║  ⚠️ TOP 5 EXAM TRAPS                                                   ║
-║  1. QuantumCircuit(2, 3) = 2 qubits, 3 classical (Q before C!)        ║
-║  2. num_qubits is PROPERTY (no parentheses), depth() is METHOD        ║
-║  3. compose() = same qubits, tensor() = adds qubits                   ║
-║  4. Parameter('θ') twice = TWO different parameters!                  ║
-║  5. qc.x(1).c_if(0,1) NOT qc.c_if(0,1).x(1) - gate first!            ║
+║  🔁 DYNAMIC CIRCUITS (Control Flow)                                    ║
+║  ├─ FOR LOOPS                                                          ║
+║  │  ├─ with qc.for_loop(range(5)): fixed iterations                   ║
+║  │  │      qc.h(0) - repeated 5 times                                 ║
+║  │  ├─ with qc.for_loop(range(3)) as i: loop variable                 ║
+║  │  │      qc.rx(i*0.1, 0) - use loop index                           ║
+║  │  └─ TRAP: for_loop(5) wrong! Need range(5)                         ║
+║  ├─ WHILE LOOPS                                                        ║
+║  │  ├─ with qc.while_loop((cr[0], 0)): - TUPLE required               ║
+║  │  │      qc.h(0)                                                    ║
+║  │  │      qc.measure(0, 0) - re-measure in loop!                     ║
+║  │  └─ TRAP: Must re-measure to update condition                      ║
+║  ├─ SWITCH STATEMENTS                                                  ║
+║  │  ├─ with qc.switch(cr) as case: multi-way branch                   ║
+║  │  │      with case(0): qc.x(0) - case 0                             ║
+║  │  │      with case(1): qc.h(0) - case 1                             ║
+║  │  │      with case(case.DEFAULT): qc.reset(0) - default             ║
+║  │  ├─ qc.break_loop() exit loop early                                ║
+║  │  └─ qc.continue_loop() skip to next iteration                      ║
+║  └─ CONSTRAINTS                                                        ║
+║     ├─ Dynamic circuits require hardware support                      ║
+║     ├─ Not all backends support dynamic circuits                      ║
+║     └─ Enable adaptive algorithms and feedback                        ║
+║                                                                        ║
+║  📚 CIRCUIT LIBRARY (Pre-built Circuits)                               ║
+║  ├─ QUANTUM FOURIER TRANSFORM                                          ║
+║  │  ├─ from qiskit.circuit.library import QFT                         ║
+║  │  ├─ qft = QFT(num_qubits=4) create 4-qubit QFT                     ║
+║  │  ├─ qft = QFT(4, do_swaps=True) with bit reversal (default)        ║
+║  │  ├─ qft_inverse = qft.inverse() inverse QFT (QFT†)                 ║
+║  │  └─ qc.append(qft, range(4)) append to circuit                     ║
+║  ├─ VQE ANSÄTZE                                                        ║
+║  │  ├─ RealAmplitudes(n, reps=k) - real amplitudes only               ║
+║  │  │   └─ Uses RY rotations + CNOT entanglement                      ║
+║  │  ├─ EfficientSU2(n, reps=k) - hardware-efficient                   ║
+║  │  │   └─ Uses RY + RZ rotations (covers full SU(2))                 ║
+║  │  ├─ TwoLocal(n, rotation, entanglement, reps) - customizable       ║
+║  │  │   └─ Specify rotation and entanglement blocks                   ║
+║  │  └─ NLocal - generalizes to N-qubit gates                          ║
+║  ├─ FEATURE MAPS                                                       ║
+║  │  ├─ PauliFeatureMap(feature_dimension, reps) - Pauli encoding      ║
+║  │  └─ ZFeatureMap(feature_dimension, reps) - Z-rotation encoding     ║
+║  └─ LIBRARY CIRCUIT PROPERTIES                                         ║
+║     ├─ TRAP: Library circuits are LOGICAL (need transpilation!)       ║
+║     ├─ Most are parameterized (must bind before execution)            ║
+║     ├─ ansatz.num_parameters shows parameter count                    ║
+║     ├─ Compose with regular circuits normally                         ║
+║     └─ Optimized for specific use cases (VQE, QAOA, etc.)             ║
+║                                                                        ║
+║  🔧 TRANSPILER PIPELINE (6 Stages: ILRTOS)                             ║
+║  ├─ STAGE 1: INIT (Decomposition)                                      ║
+║  │  ├─ Decomposes 3+ qubit gates into 2-qubit gates                   ║
+║  │  ├─ Unroll3qOrMore pass breaks down complex gates                  ║
+║  │  └─ Ensures max 2-qubit gates for routing stage                    ║
+║  ├─ STAGE 2: LAYOUT (Logical→Physical Mapping)                         ║
+║  │  ├─ Maps logical qubits to physical hardware qubits                ║
+║  │  ├─ TrivialLayout: q[i]→i (simple, no optimization)                ║
+║  │  ├─ VF2Layout: Perfect graph matching (best but slow/may fail)     ║
+║  │  ├─ SabreLayout: Heuristic (default, good balance)                 ║
+║  │  ├─ DenseLayout: Pack connected qubits together                    ║
+║  │  └─ Good layout → fewer SWAPs → better performance                 ║
+║  ├─ STAGE 3: ROUTING (SWAP Insertion)                                  ║
+║  │  ├─ Inserts SWAP gates for non-adjacent 2-qubit gates              ║
+║  │  ├─ TRAP: Each SWAP = 3 CNOT gates! (expensive!)                   ║
+║  │  ├─ SabreSwap: Heuristic routing (default, generally good)         ║
+║  │  ├─ StochasticSwap: Random search with scoring (alternative)       ║
+║  │  ├─ Routing is NP-hard (heuristics may not be optimal)             ║
+║  │  └─ Coupling map defines allowed 2-qubit interactions              ║
+║  ├─ STAGE 4: TRANSLATION (Basis Gate Conversion)                       ║
+║  │  ├─ Converts all gates to hardware basis gates                     ║
+║  │  ├─ BasisTranslator pass handles conversion                        ║
+║  │  ├─ Example basis: ['id','rz','sx','x','cx']                       ║
+║  │  ├─ Some gates decompose into multiple basis gates                 ║
+║  │  └─ Must specify valid basis gates for target hardware             ║
+║  ├─ STAGE 5: OPTIMIZATION (Gate Reduction)                             ║
+║  │  ├─ Level 0: No optimization (TrivialLayout, minimal passes)       ║
+║  │  ├─ Level 1: Light optimization (basic passes)                     ║
+║  │  ├─ Level 2: Medium optimization (default, balanced)               ║
+║  │  ├─ Level 3: Heavy optimization (unitary synthesis, slow)          ║
+║  │  ├─ Higher level = more compilation time                           ║
+║  │  ├─ TRAP: Level 3 ≠ always better! (diminishing returns)           ║
+║  │  └─ Passes: gate cancellation, commutation, resynthesis            ║
+║  ├─ STAGE 6: SCHEDULING (Timing Information)                           ║
+║  │  ├─ Adds pulse-level timing to circuit                             ║
+║  │  ├─ ASAP: As Soon As Possible (minimize idle at start)             ║
+║  │  ├─ ALAP: As Late As Possible (minimize idle before measure)       ║
+║  │  ├─ TRAP: ALAP better for decoherence! (gates closer to measure)   ║
+║  │  ├─ Scheduled circuits include Delay instructions                  ║
+║  │  └─ Delay = idle time (no gates executing)                         ║
+║  └─ TRANSPILER USAGE                                                   ║
+║     ├─ from qiskit.transpiler.preset_passmanagers import generate_... ║
+║     ├─ pm = generate_preset_pass_manager(level, backend)              ║
+║     ├─ transpiled = pm.run(qc) execute transpilation                  ║
+║     ├─ TRAP: Backend REQUIRED for realistic results!                  ║
+║     ├─ Backend provides: coupling map, basis gates, timing            ║
+║     ├─ seed_transpiler=42 for reproducibility                         ║
+║     └─ Transpiled circuit usually has GREATER depth (SWAPs!)          ║
+║                                                                        ║
+║  ⚠️⚠️⚠️ TOP 15 EXAM TRAPS - MEMORIZE THESE! ⚠️⚠️⚠️                        ║
+║  1.  QuantumCircuit(2,3) = 2 QUBITS, 3 CLASSICAL! (Q before C)        ║
+║  2.  num_qubits is PROPERTY (no ()), depth() is METHOD (with ())      ║
+║  3.  compose() = SAME qubits, tensor() = ADDS qubits                  ║
+║  4.  compose() returns NEW circuit (default inplace=False)            ║
+║  5.  qc.append(HGate(), [0]) needs LIST even for single qubit!        ║
+║  6.  Parameter('θ') twice creates TWO different parameter objects!    ║
+║  7.  qc.x(1).c_if(0,1) NOT qc.c_if(0,1).x(1) - gate FIRST!           ║
+║  8.  if_test needs TUPLE: (clbit, value) not clbit, value             ║
+║  9.  c_if register value is INTEGER: cr==3 means binary '11'          ║
+║  10. Must measure BEFORE conditionals (c_if/if_test need value!)      ║
+║  11. SWAP = 3 CNOT gates! (routing is VERY expensive)                 ║
+║  12. bind_parameters() DEPRECATED → use assign_parameters()           ║
+║  13. Transpiler needs backend for realistic results (coupling + basis)║
+║  14. ALAP scheduling better than ASAP (minimize decoherence)          ║
+║  15. Parallel gates = ONE depth layer (H on q[0,1,2] = depth 1!)      ║
+║                                                                        ║
+║  🎯 QUICK DECISION GUIDE                                               ║
+║  Combining circuits sequentially? → compose() (same qubits)           ║
+║  Combining circuits in parallel? → tensor() (adds qubits)             ║
+║  Need symbolic gate angles? → Parameter() and assign_parameters()     ║
+║  Legacy conditionals? → gate.c_if(clbit, value)                       ║
+║  Modern conditionals? → with qc.if_test((clbit, value)):              ║
+║  Need pre-built circuits? → Circuit library (QFT, ansätze)            ║
+║  Compiling for hardware? → Transpiler with backend                    ║
+║  Checking properties? → Remember: num_qubits (no ()), depth() (with ())║
+║                                                                        ║
+║  💡 CRITICAL CONCEPT SUMMARY                                           ║
+║  ├─ Properties vs Methods: Know which use () and which don't!         ║
+║  ├─ compose vs tensor: Same qubits vs adding qubits                   ║
+║  ├─ Parameter identity: Object matters, not name string               ║
+║  ├─ c_if vs if_test: Legacy vs modern (know both!)                    ║
+║  ├─ Transpiler: 6-stage pipeline (ILRTOS mnemonic)                    ║
+║  ├─ SWAP cost: 3 CNOTs per SWAP (expensive!)                          ║
+║  └─ Circuit library: Logical circuits (transpile before running)      ║
 ║                                                                        ║
 ╚═══════════════════════════════════════════════════════════════════════╝
 ```

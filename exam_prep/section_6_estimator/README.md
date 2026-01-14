@@ -1807,132 +1807,777 @@ print(f"Cost value: {result.fun:.4f}")
 
 ---
 
-# 🎯 Key Takeaways
+## ✅ Key Takeaways
 
-## Concept Mastery Checklist
-
+### 📚 Concept Checklist
 ```
-□ I understand the difference: Sampler=counts, Estimator=expectation values
-□ I know Estimator circuits MUST NOT have measurements ("ENM")
-□ I understand SparsePauliOp qubit ordering (leftmost = qubit 0)
-□ I know PUB format: (circuit, observable, params, precision)
-□ I understand expectation value formula: ⟨O⟩ = ⟨ψ|O|ψ⟩
-□ I know VQE minimizes ⟨H⟩ to find ground state energy
-□ I know QAOA structure: Cost layer then Mixer layer
-□ I understand resilience levels: 0=none, 1=M3, 2=ZNE
-□ I know twirling defaults differ: Estimator has enable_measure=True
+CORE CONCEPTS:
+□ Estimator returns expectation values ⟨O⟩, Sampler returns counts/bitstrings
+□ Estimator circuits MUST NOT have measurements ("ENM" - Estimator No Measures)
+□ SparsePauliOp uses leftmost = qubit 0 ordering (opposite of bitstring convention)
+□ PUB format: (circuit, observable, params, precision) for Estimator
+□ Expectation value: ⟨O⟩ = ⟨ψ|O|ψ⟩ = sum of eigenvalues weighted by probabilities
+□ VQE (Variational Quantum Eigensolver) minimizes ⟨H⟩ to find ground state energy
+□ QAOA (Quantum Approximate Optimization) structure: Cost layer then Mixer layer
+□ Resilience levels: 0=none (ideal), 1=M3 mitigation, 2=M3+ZNE
+□ Twirling defaults: Estimator has enable_gates=True, enable_measure=True (both ON)
+□ Gradient-free optimizers (COBYLA, SPSA) work best with noisy quantum hardware
+□ Observable apply_layout() remaps qubits after transpilation
+□ Multiple observables can share same circuit in single PUB
+□ Result structure: result[0].data.evs (plural!) and result[0].data.stds
+
+CONSTRAINTS & LIMITATIONS:
+□ Estimator will ERROR if circuit contains any measurement gates (not just ignore)
+□ Observable must match circuit qubit count (3-qubit circuit needs 3-character Pauli)
+□ Maximum 300 PUBs per job submission in runtime (exceeding causes error)
+□ precision parameter must be positive float (0 or negative causes ValueError)
+□ Parameter binding must match circuit's num_parameters exactly
+□ Cannot use ClassicalRegister with Estimator (no classical bits allowed)
+□ SparsePauliOp coefficients must be real numbers (complex not supported for expectation)
+□ Observable qubits cannot exceed circuit qubits (padding with 'I' if needed)
+□ Each observable in list must have same number of qubits
+□ Precision target is best-effort, not guaranteed (hardware limitations)
+□ Session expires after 5 minutes idle (jobs fail if session closed)
+□ Resilience level 2 significantly increases runtime (5-10x slower than level 0)
+
+KEY DEFINITIONS:
+□ Expectation value: Average measurement outcome ⟨ψ|O|ψ⟩ for observable O
+□ Observable: Hermitian operator whose expectation value is computed
+□ SparsePauliOp: Sparse representation of Pauli strings with coefficients
+□ Pauli string: Tensor product of Pauli operators (I, X, Y, Z)
+□ PUB (Primitive Unified Bloc): Tuple (circuit, observable, parameters, precision)
+□ DataBin: Container holding evs (expectation values) and stds (standard deviations)
+□ Hamiltonian: Energy operator whose ground state VQE finds
+□ Ansatz: Parameterized quantum circuit (trial wavefunction)
+□ Cost function: Objective to minimize, typically ⟨H⟩ in VQE
+□ Resilience: Error mitigation techniques (M3, ZNE) to reduce noise impact
+□ M3 mitigation: Matrix-free Measurement Mitigation
+□ ZNE: Zero Noise Extrapolation - extrapolates to zero-noise limit
+□ Twirling: Randomized compilation converting coherent to stochastic noise
+□ apply_layout: Method to remap observable qubits after circuit transpilation
+
+ARCHITECTURE & WORKFLOW:
+□ Estimator uses V2 interface: run() returns Job, result() returns PrimitiveResult
+□ StatevectorEstimator simulates ideal quantum computer (no noise)
+□ EstimatorV2 connects to IBM Quantum hardware or noisy simulators
+□ Runtime primitives batch-optimize multiple circuits for efficiency
+□ Primitive options persist across multiple run() calls on same instance
+□ Job queuing: jobs wait in QUEUED state until resources available
+□ Results persist in cloud for 7 days after completion (then deleted)
+□ Estimator internally samples and averages to estimate ⟨O⟩
+□ Higher precision targets increase sampling shots automatically
+□ Observable decomposition: complex observables split into Pauli basis
+
+VQE & QAOA SPECIFICS:
+□ VQE alternates: quantum (expectation) → classical (optimization) → repeat
+□ QAOA structure: initial state (H gates) → Cost layer → Mixer layer → measure expectation
+□ Cost layer encodes problem: phase gates implementing problem Hamiltonian
+□ Mixer layer maintains superposition: typically X rotations on all qubits
+□ QAOA parameter order: (γ, β) where γ = cost angle, β = mixer angle
+□ VQE convergence depends on ansatz expressiveness and optimizer choice
+□ COBYLA: Constrained Optimization BY Linear Approximation (gradient-free)
+□ SPSA: Simultaneous Perturbation Stochastic Approximation (handles noise well)
+□ Gradient-based optimizers (BFGS, L-BFGS-B) fail on noisy hardware
+
+VERSION-SPECIFIC:
+□ V1 Estimator deprecated: use V2 (EstimatorV2, not Estimator)
+□ Old execute() removed in Qiskit 1.0 - use primitives exclusively
+□ qiskit-ibm-runtime separate package required for hardware access
+□ StatevectorEstimator in qiskit.primitives (local), EstimatorV2 in qiskit_ibm_runtime
+□ SparsePauliOp replaces older Operator types in primitive workflows
 ```
 
-## Code Mastery Checklist
-
+### 💻 Code Pattern Checklist
 ```
-□ I can write result[0].data.evs from memory (plural!)
-□ I can write result[0].data.stds from memory (plural!)
-□ I can create SparsePauliOp: SparsePauliOp(['ZZ', 'XX'], [1.0, 0.5])
-□ I can create Estimator PUB: [(circuit, SparsePauliOp('ZZ'))]
-□ I can bind parameters: circuit.assign_parameters([value1, value2])
-□ I can implement VQE cost function with scipy.optimize.minimize
-□ I can build QAOA circuit: H gates → rzz (cost) → rx (mixer)
-□ I can iterate multiple PUB results: for i in range(len(result))
-□ I can set resilience: estimator.options.resilience_level = 1
+ESSENTIAL IMPORTS:
+□ from qiskit.primitives import StatevectorEstimator  # ideal/local simulation
+□ from qiskit_ibm_runtime import EstimatorV2  # hardware/runtime
+□ from qiskit_ibm_runtime import QiskitRuntimeService  # backend access
+□ from qiskit.quantum_info import SparsePauliOp  # observable creation
+□ from qiskit import QuantumCircuit  # circuit creation
+□ from qiskit.circuit import Parameter  # parameterized circuits
+□ from scipy.optimize import minimize  # VQE optimization
+□ from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+
+ESTIMATOR INITIALIZATION:
+□ estimator = StatevectorEstimator()  # no arguments, local ideal sim
+□ service = QiskitRuntimeService(); backend = service.backend("ibm_brisbane")
+□ estimator = EstimatorV2(mode=backend)  # runtime with specific backend
+□ estimator = EstimatorV2(mode=backend, options=options_dict)  # with options
+□ estimator = StatevectorEstimator(default_precision=0.01)  # custom precision
+□ estimator = StatevectorEstimator(seed=42)  # reproducible simulation
+
+OBSERVABLE CREATION:
+□ obs = SparsePauliOp('Z')  # single qubit, single Pauli
+□ obs = SparsePauliOp('ZZ')  # two qubits, Z⊗Z tensor product
+□ obs = SparsePauliOp('XIZ')  # three qubits, X⊗I⊗Z (leftmost=q0)
+□ obs = SparsePauliOp(['ZZ', 'XX'], [1.0, 0.5])  # weighted sum: 1.0*ZZ + 0.5*XX
+□ obs = SparsePauliOp.from_list([('ZZ', 1.0), ('XX', 0.5)])  # alternative syntax
+□ obs = SparsePauliOp(['ZI', 'IZ'], [0.5, 0.5])  # sum of single-qubit terms
+□ H = SparsePauliOp(['ZZ', 'ZI', 'IZ', 'XX'], [1.0, -0.5, -0.5, 0.3])  # Hamiltonian
+□ obs = SparsePauliOp('I' * n_qubits)  # identity (returns 1.0)
+□ coeff, pauli_list = obs.coeffs, obs.paulis  # extract components
+
+CIRCUIT PREPARATION (NO MEASUREMENTS!):
+□ qc = QuantumCircuit(2)  # NO ClassicalRegister, NO measurements
+□ qc.h(0); qc.cx(0, 1)  # quantum operations only
+□ assert qc.num_clbits == 0, "Estimator requires no classical bits!"
+□ theta = Parameter('θ'); phi = Parameter('φ')
+□ qc.ry(theta, 0); qc.rz(phi, 1)  # parameterized circuit
+□ # DO NOT add qc.measure_all() or qc.measure() - ERROR!
+
+BASIC RUN PATTERNS:
+□ job = estimator.run([(qc, obs)])  # single circuit-observable pair
+□ result = job.result()  # blocking call, waits for completion
+□ ev = result[0].data.evs[0]  # extract first expectation value (note: evs is array!)
+□ std = result[0].data.stds[0]  # extract first standard deviation
+□ evs = result[0].data.evs  # all expectation values (if multiple observables)
+□ stds = result[0].data.stds  # all standard deviations
+
+PARAMETERIZED CIRCUITS:
+□ theta = Parameter('θ'); phi = Parameter('φ')
+□ qc.ry(theta, 0); qc.rz(phi, 1)  # add parameterized gates
+□ job = estimator.run([(qc, obs, [0.5, 1.2])])  # bind [θ=0.5, φ=1.2]
+□ job = estimator.run([(qc, obs, [0.5, 1.2], 0.01)])  # with precision target
+□ job = estimator.run([(qc, obs, None, 0.01)])  # no params, custom precision
+□ bound_qc = qc.assign_parameters([0.5, 1.2])  # pre-bind parameters
+□ job = estimator.run([(bound_qc, obs)])  # run pre-bound circuit
+□ param_values = [[0, 0], [0, π/2], [π/2, 0], [π/2, π/2]]
+□ jobs = [estimator.run([(qc, obs, vals)]) for vals in param_values]  # sweep
+
+MULTIPLE PUBS:
+□ job = estimator.run([(qc1, obs1), (qc2, obs2), (qc3, obs3)])  # batch submission
+□ result[0].data.evs  # qc1 expectation values
+□ result[1].data.evs  # qc2 expectation values
+□ result[2].data.evs  # qc3 expectation values
+□ for i, pub_result in enumerate(result):  # iterate all
+□     evs = pub_result.data.evs
+□ all_evs = [r.data.evs for r in result]  # list comprehension
+
+MULTIPLE OBSERVABLES (SAME CIRCUIT):
+□ observables = [SparsePauliOp('ZZ'), SparsePauliOp('XX'), SparsePauliOp('YY')]
+□ job = estimator.run([(qc, observables)])  # single PUB, multiple observables
+□ evs = result[0].data.evs  # array: [⟨ZZ⟩, ⟨XX⟩, ⟨YY⟩]
+□ stds = result[0].data.stds  # array: [σ_ZZ, σ_XX, σ_YY]
+□ for obs, ev, std in zip(observables, evs, stds):  # iterate results
+
+RESULT EXTRACTION (FULL CHAIN):
+□ result = job.result()  # PrimitiveResult object
+□ pub_result = result[0]  # PubResult for first PUB
+□ data_bin = pub_result.data  # DataBin container
+□ evs = data_bin.evs  # numpy array of expectation values (PLURAL!)
+□ stds = data_bin.stds  # numpy array of standard deviations (PLURAL!)
+□ metadata = pub_result.metadata  # access metadata
+□ num_obs = len(evs)  # number of observables in this PUB
+
+TRANSPILATION & LAYOUT:
+□ pm = generate_preset_pass_manager(optimization_level=3, backend=backend)
+□ qc_transpiled = pm.run(qc)  # transpile circuit
+□ layout = qc_transpiled.layout  # extract layout information
+□ obs_remapped = obs.apply_layout(layout)  # remap observable to match
+□ job = estimator.run([(qc_transpiled, obs_remapped)])  # run with remapped obs
+
+OPTIONS CONFIGURATION:
+□ options = estimator.options  # get current options
+□ estimator.options.default_precision = 0.01  # set precision target
+□ options.resilience_level = 0  # no mitigation (ideal/debug)
+□ options.resilience_level = 1  # enable M3 mitigation
+□ options.resilience_level = 2  # enable M3 + ZNE (slower but better)
+□ options.twirling.enable_gates = True  # gate twirling (default ON for Estimator)
+□ options.twirling.enable_measure = True  # measurement twirling (default ON)
+□ options.twirling.num_randomizations = 32  # set twirling rounds
+□ options.dynamical_decoupling.enable = True  # enable DD
+□ options.dynamical_decoupling.sequence_type = 'XY4'  # DD sequence
+□ options.optimization_level = 3  # transpiler optimization (0-3)
+
+VQE PATTERN (COMPLETE):
+□ H = SparsePauliOp(['ZZ', 'ZI', 'IZ', 'XX'], [1.0, -0.5, -0.5, 0.3])  # Hamiltonian
+□ ansatz = QuantumCircuit(2)  # NO measurements!
+□ theta = Parameter('θ'); phi = Parameter('φ')
+□ ansatz.ry(theta, 0); ansatz.ry(phi, 1); ansatz.cx(0, 1)
+□ def cost_function(params):
+□     bound_circuit = ansatz.assign_parameters(params)
+□     job = estimator.run([(bound_circuit, H)])
+□     return job.result()[0].data.evs[0]  # minimize this!
+□ initial_params = [0.0, 0.0]
+□ result = minimize(cost_function, initial_params, method='COBYLA')
+□ optimal_energy = result.fun
+□ optimal_params = result.x
+
+QAOA PATTERN (COMPLETE):
+□ def qaoa_circuit(gamma, beta, n_qubits):
+□     qc = QuantumCircuit(n_qubits)
+□     qc.h(range(n_qubits))  # initial superposition
+□     # Cost layer (problem-specific)
+□     for i in range(n_qubits-1):
+□         qc.rzz(2*gamma, i, i+1)  # cost Hamiltonian
+□     # Mixer layer
+□     for i in range(n_qubits):
+□         qc.rx(2*beta, i)  # mixer Hamiltonian
+□     return qc  # NO measurements!
+□ cost_hamiltonian = SparsePauliOp(['ZZ', 'ZI', 'IZ'], [1.0, 0.5, 0.5])
+□ def qaoa_cost(params):
+□     gamma, beta = params
+□     qc = qaoa_circuit(gamma, beta, 2)
+□     job = estimator.run([(qc, cost_hamiltonian)])
+□     return job.result()[0].data.evs[0]
+□ result = minimize(qaoa_cost, [0.5, 0.5], method='COBYLA')
+
+JOB MANAGEMENT:
+□ job_id = job.job_id()  # get job ID for later retrieval
+□ status = job.status()  # check job status (QUEUED, RUNNING, DONE, ERROR)
+□ result = job.result()  # wait for completion (blocking)
+□ job = service.job(job_id)  # retrieve old job by ID
+□ job.cancel()  # cancel queued/running job
+□ job.wait_for_final_state()  # blocking wait without retrieving result
+
+ERROR HANDLING:
+□ try: result = job.result()
+□ except Exception as e: print(f"Job failed: {e}")
+□ if job.status() == 'ERROR': print(job.error_message())
+□ assert qc.num_clbits == 0, "Estimator requires no classical bits!"
+□ if any(isinstance(inst.operation, Measure) for inst in qc.data):
+□     raise ValueError("Estimator circuits must not have measurements")
 ```
 
-## Trap Avoidance Checklist
-
+### ⚠️ Exam Trap Checklist
 ```
-□ I won't add measurements to Estimator circuits ("ENM")
-□ I won't use string for observable: SparsePauliOp('ZZ') not 'ZZ'
-□ I won't forget .data: result[0].data.evs not result[0].evs
-□ I won't use singular: evs/stds not ev/std
-□ I won't forget list for params: [0.5] not 0.5
-□ I won't use Sampler PUB format: [(qc, obs)] not [(qc,)]
-□ I won't forget assign_parameters() before running
-□ I won't use gradient optimizers with VQE: COBYLA not BFGS
-□ I won't reverse QAOA order: Cost then Mixer, not Mixer then Cost
+MEASUREMENT TRAPS:
+□ TRAP: Adding measurements to Estimator circuit
+  → Estimator circuits MUST NOT have measure() or measure_all()
+  → "ENM" = Estimator No Measures - will ERROR not warn
+□ TRAP: Adding ClassicalRegister thinking it's optional
+  → Estimator forbids classical bits entirely: qc.num_clbits must be 0
+□ TRAP: Using measure_all() before removing it
+  → Cannot undo measure_all() easily; rebuild circuit without measurements
+□ TRAP: Thinking Estimator ignores measurements
+  → Estimator will ERROR, not ignore measurements
+□ TRAP: Confusing Estimator/Sampler measurement requirements
+  → Sampler REQUIRES measurements, Estimator FORBIDS them
+
+OBSERVABLE TRAPS:
+□ TRAP: Using string for observable instead of SparsePauliOp
+  → estimator.run([(qc, 'ZZ')]) is WRONG
+  → Use: estimator.run([(qc, SparsePauliOp('ZZ'))])
+□ TRAP: Observable qubit count mismatch
+  → 3-qubit circuit needs 3-character Pauli: 'ZZZ' not 'ZZ'
+□ TRAP: Wrong SparsePauliOp coefficient format
+  → SparsePauliOp(['ZZ', 'XX'], 1.0) is WRONG (single value for list)
+  → Use: SparsePauliOp(['ZZ', 'XX'], [1.0, 0.5]) with list of coefficients
+□ TRAP: Forgetting apply_layout() after transpilation
+  → Observable qubits must match transpiled circuit layout
+  → Use: obs.apply_layout(transpiled.layout)
+□ TRAP: Using complex coefficients in SparsePauliOp
+  → Expectation values must be real; complex coefficients cause issues
+□ TRAP: Assuming identity observable gives 0
+  → SparsePauliOp('III') gives ⟨I⟩ = 1.0 not 0
+
+RESULT EXTRACTION TRAPS:
+□ TRAP: Missing .data in result chain
+  → result[0].evs is WRONG
+  → Use: result[0].data.evs (always need .data!)
+□ TRAP: Using singular ev/std instead of plural evs/stds
+  → result[0].data.ev is WRONG (no such attribute)
+  → Use: result[0].data.evs (plural with s!)
+□ TRAP: Forgetting array indexing for single value
+  → result[0].data.evs is array, not scalar
+  → For single observable: ev = result[0].data.evs[0]
+□ TRAP: Confusing evs with counts
+  → evs is array of floats (expectation values), not dict like counts
+□ TRAP: Expecting integer results
+  → Expectation values are floats: -1.0 ≤ ⟨O⟩ ≤ 1.0 for single Pauli
+□ TRAP: Not checking result length
+  → len(result[0].data.evs) equals number of observables
+□ TRAP: Mixing up result indices
+  → result[i] for i-th PUB, result[0].data.evs[j] for j-th observable in first PUB
+
+PARAMETER BINDING TRAPS:
+□ TRAP: Passing parameter as single value instead of list
+  → [(qc, obs, 0.5)] is WRONG
+  → Use: [(qc, obs, [0.5])] with list brackets (even for one param!)
+□ TRAP: Wrong number of parameter values
+  → If circuit has 2 params, must provide exactly 2 values
+□ TRAP: Parameter order confusion
+  → Values bind in order parameters were created
+□ TRAP: Using None for parameters when circuit has parameters
+  → None means "no parameters", not "default values"
+□ TRAP: Forgetting assign_parameters() in VQE loop
+  → Must bind before each run: bound = ansatz.assign_parameters(params)
+□ TRAP: Modifying circuit parameters after binding
+  → assign_parameters() creates new circuit; original unchanged
+
+PUB FORMAT TRAPS:
+□ TRAP: Using Sampler PUB format for Estimator
+  → [(qc,)] is Sampler format (missing observable)
+  → Use: [(qc, obs)] for Estimator (observable required!)
+□ TRAP: Wrong PUB tuple order
+  → Order is (circuit, observable, params, precision), not (circuit, params, obs)
+□ TRAP: Passing precision as second argument
+  → [(qc, 0.01)] is WRONG (0.01 interpreted as observable)
+  → Use: [(qc, obs, None, 0.01)]
+□ TRAP: Using dict instead of tuple for PUB
+  → Cannot use {'circuit': qc, 'observable': obs}, must use (qc, obs)
+□ TRAP: Missing observable in single-element tuple
+  → [(qc)] is incomplete for Estimator; need [(qc, obs)]
+
+OPTIMIZER TRAPS:
+□ TRAP: Using gradient-based optimizers with noisy hardware
+  → BFGS, L-BFGS-B require gradients (bad for noise)
+  → Use: COBYLA, SPSA (gradient-free)
+□ TRAP: Wrong method name in minimize()
+  → method='Cobyla' is WRONG (case-sensitive)
+  → Use: method='COBYLA' (all caps)
+□ TRAP: Not setting maxiter for long VQE runs
+  → Default iterations may be too few or too many
+  → Use: minimize(..., options={'maxiter': 100})
+□ TRAP: Expecting fast convergence on hardware
+  → VQE on noisy hardware takes many iterations (50-200+)
+□ TRAP: Using same initial params every time
+  → Try multiple random starts to avoid local minima
+
+QAOA-SPECIFIC TRAPS:
+□ TRAP: Wrong QAOA layer order
+  → Cost then Mixer (γ before β), NOT Mixer then Cost
+  → Remember: "CostMix" mnemonic
+□ TRAP: Wrong parameter order in QAOA
+  → Parameters should be (γ, β) not (β, γ)
+□ TRAP: Forgetting initial superposition
+  → QAOA starts with qc.h(range(n)) on all qubits
+□ TRAP: Using single angle instead of doubled
+  → QAOA uses qc.rzz(2*gamma, i, j), not qc.rzz(gamma, i, j)
+□ TRAP: Missing edges in Cost layer
+  → Must apply rzz to all problem edges
+□ TRAP: Wrong mixer: using RZ instead of RX
+  → Mixer is qc.rx(2*beta, i), not qc.rz(...)
+
+ORDERING CONFUSION TRAPS:
+□ TRAP: Confusing SparsePauliOp ordering with bitstring ordering
+  → SparsePauliOp: leftmost = q0 ('XIZ' = X on q0)
+  → Bitstrings: rightmost = q0 ('01' = q0=1)
+  → They're OPPOSITE!
+□ TRAP: Reading 'ZIX' as Z on q2
+  → 'ZIX' means Z on q0, I on q1, X on q2 (left-to-right)
+□ TRAP: Expecting tensor product right-to-left
+  → X⊗I⊗Z in math notation = 'XIZ' in Qiskit (same direction)
+□ TRAP: Using statevector indexing for SparsePauliOp
+  → Statevector index |01⟩ = 1 (binary), but 'ZI' acts on q0 with Z
+
+OPTIONS & CONFIGURATION TRAPS:
+□ TRAP: Confusing twirling defaults Sampler vs Estimator
+  → Sampler: gates=False, measure=False (both OFF)
+  → Estimator: gates=True, measure=True (both ON)
+□ TRAP: Setting resilience_level to 3 or higher
+  → Valid range is 0-2; higher values cause error
+□ TRAP: Expecting resilience_level=2 same speed as 0
+  → Level 2 (M3+ZNE) is 5-10x slower than level 0
+□ TRAP: Using precision=0.0
+  → precision must be positive; 0 or negative raises ValueError
+□ TRAP: Expecting exact precision
+  → precision is best-effort target, not guaranteed
+□ TRAP: Not setting options before first run
+  → Options must be set before job submission to take effect
+
+TYPE & METHOD TRAPS:
+□ TRAP: Using .coeffs on result instead of observable
+  → result doesn't have coeffs; SparsePauliOp.coeffs has them
+□ TRAP: Trying to extract counts from Estimator
+  → Estimator returns expectation values, not counts
+  → For counts, use Sampler
+□ TRAP: Using get_counts() on Estimator result
+  → No such method; use result[0].data.evs
+□ TRAP: Expecting stds to be integers
+  → stds are floats (standard deviations), not counts
+
+IMPORT & VERSION TRAPS:
+□ TRAP: from qiskit.primitives import Estimator (V1, deprecated)
+  → Use: from qiskit.primitives import StatevectorEstimator (V2)
+□ TRAP: from qiskit_ibm_runtime import Estimator
+  → Use: from qiskit_ibm_runtime import EstimatorV2 (explicit V2)
+□ TRAP: Mixing V1 and V2 interfaces
+  → V2 uses .run([(qc, obs)]), V1 uses different format
+□ TRAP: Importing SparsePauliOp from wrong module
+  → Use: from qiskit.quantum_info import SparsePauliOp
+  → Not from qiskit.opflow (deprecated)
+
+VQE-SPECIFIC TRAPS:
+□ TRAP: Not returning scalar from cost function
+  → cost_function must return float, not array: return evs[0]
+□ TRAP: Creating new estimator in each cost call
+  → Create estimator once outside, reuse in cost function
+□ TRAP: Not storing intermediate results
+  → VQE iterations lost if not saved during optimization
+□ TRAP: Using too simple ansatz
+  → Ansatz must be expressive enough to represent ground state
+□ TRAP: Starting with zero initial parameters
+  → Try small random values: np.random.rand(n_params) * 0.1
+
+COMMON MISTAKES:
+□ TRAP: Running circuit without transpilation on hardware
+  → Runtime auto-transpiles but exam may test explicit transpilation
+□ TRAP: Not handling job failures gracefully
+  → Always wrap job.result() in try/except
+□ TRAP: Assuming immediate result availability
+  → Hardware jobs queue; check job.status() before result()
+□ TRAP: Using same circuit object for multiple PUBs
+  → If circuit modified after first PUB, affects later; use .copy()
+□ TRAP: Forgetting observable for each circuit in batch
+  → Each PUB needs (circuit, observable), not just circuit
 ```
 
-## Mnemonic Recall Box
-
+### 🧠 Mnemonic Recall Box
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  "ENM" = Estimator No Measures                                  │
-│  → Estimator circuits have NO measurement gates                 │
+│ SECTION 6 MNEMONICS - MEMORIZE THESE!                          │
+├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  "TiPO" = Tensor in Pauli Order                                 │
-│  → 'XIZ': X on q0, I on q1, Z on q2 (left to right)            │
+│ 🚫 "ENM" - Estimator No Measures - MOST CRITICAL               │
+│    Estimator circuits MUST NOT have measurement gates           │
+│    → Opposite of Sampler ("S needs M")                          │
+│    → Will ERROR if measurements present                         │
+│    💡 Think: "Estimator Expects No Measurements"                │
 │                                                                  │
-│  "0-D-EV-S" = [0].data.evs                                      │
-│  → Result access chain (plural s!)                              │
+│ 📐 "TiPO" - Tensor in Pauli Order                              │
+│    'XIZ' = X⊗I⊗Z (left to right = q0 to q2)                    │
+│    → Leftmost character = qubit 0                               │
+│    💡 Visual: X I Z → q0 q1 q2 (reading direction matches)      │
+│    💡 Opposite of bitstring! ('01' = rightmost is q0)           │
 │                                                                  │
-│  "COPPP" = Circuit Observable Params Precision                  │
-│  → Estimator PUB format                                         │
+│ 🔗 "0-D-EVS" Chain (note the S!) - CRITICAL PATH               │
+│    result[0].data.evs (plural!)                                 │
+│    → [0] = first PUB, data = container, evs = expectation values│
+│    💡 "Zero Dogs Eat Very Slowly" - each word is a step         │
+│    💡 Always plural: evs and stds (NEVER ev or std)             │
 │                                                                  │
-│  "COBYLA for Quantum"                                           │
-│  → Gradient-free optimizer for noisy VQE                        │
+│ 📦 "COPP" - Circuit Observable Params Precision                 │
+│    Estimator PUB: (circuit, observable, params, precision)      │
+│    → All except circuit/observable are optional                 │
+│    → Order matters: cannot swap positions!                      │
+│    💡 "Cops Observe People Precisely"                           │
 │                                                                  │
-│  "CostMix" = Cost then Mixer                                    │
-│  → QAOA layer order (γ before β)                                │
+│ 🎯 "COBYLA for Quantum" - OPTIMIZER CHOICE                      │
+│    Gradient-free optimizer for noisy VQE/QAOA                   │
+│    → No gradients needed (robust to noise)                      │
+│    → All caps: method='COBYLA' not 'Cobyla'                     │
+│    💡 "Can't Obtain By Yielding Linear Approximations"          │
 │                                                                  │
-│  "012 = None-M3-ZNE"                                            │
-│  → resilience_level values                                      │
+│ 🔄 "CostMix" - Cost then Mixer - QAOA ORDER                     │
+│    QAOA layer order: Cost(γ) then Mixer(β)                      │
+│    → γ comes before β in parameters                             │
+│    → Cost encodes problem, Mixer maintains superposition        │
+│    💡 "First you pay the Cost, then you Mix it up"              │
+│                                                                  │
+│ 🛡️ "012 = None-M3-ZNE" - RESILIENCE LEVELS                     │
+│    resilience_level values:                                     │
+│    → 0 = None (ideal/debug) - fastest                           │
+│    → 1 = M3 mitigation - moderate speed                         │
+│    → 2 = M3 + ZNE (Zero Noise Extrapolation) - slowest but best│
+│    💡 "0 is None, 1 is M3, 2 is M3+ZNE" (count up!)             │
+│                                                                  │
+│ 🔀 "GMGM vs GOMO" - TWIRLING DEFAULTS                           │
+│    Estimator: Gates More, Measure More (both ON = True)         │
+│    Sampler: Gates Off, Measure Off (both OFF = False)           │
+│    💡 Estimator is "active", Sampler is "passive"               │
+│    💡 E = Energized (on), S = Still (off)                       │
+│                                                                  │
+│ 🔤 "Plural with S" - RESULT ATTRIBUTES                          │
+│    result[0].data.evs (plural with s)                           │
+│    result[0].data.stds (plural with s)                          │
+│    → NEVER singular ev or std (AttributeError!)                 │
+│    💡 "evs" rhymes with "several" (multiple values)             │
+│                                                                  │
+│ 🎭 "E vs S" - Estimator vs Sampler Quick Reference              │
+│    Estimator: NO measurements | Returns ⟨O⟩ | Needs observable  │
+│    Sampler: Measurements REQUIRED | Returns counts | No observable│
+│    💡 "Estimator Expects numbers, Sampler Sees bits"            │
+│                                                                  │
+│ 🧬 "VQE = Vary-Quantum-Estimate" - VQE WORKFLOW                 │
+│    1. Vary parameters (classical optimizer)                     │
+│    2. Quantum circuit with new parameters                       │
+│    3. Estimate energy ⟨H⟩                                       │
+│    4. Repeat until converged                                    │
+│    💡 Alternating quantum-classical loop                        │
+│                                                                  │
+│ ⚖️ "Observable Must Match" - QUBIT COUNT RULE                   │
+│    Circuit with n qubits needs n-character Pauli string         │
+│    → 3 qubits → 'ZZZ', 'XIZ', 'III' (all length 3)             │
+│    💡 "One letter per qubit"                                    │
+│                                                                  │
+│ 🎲 "Expectation = Average" - INTERPRETATION                     │
+│    Expectation value ⟨O⟩ is weighted average of eigenvalues     │
+│    → Range: -1 to +1 for single Pauli operator                  │
+│    → Not a probability (can be negative!)                       │
+│    💡 "Expected value if you measured many times"               │
+│                                                                  │
+│ 🔧 "SparsePauliOp = String + Coeffs" - CONSTRUCTION             │
+│    SparsePauliOp(['ZZ', 'XX'], [1.0, 0.5])                      │
+│    → Two lists: Pauli strings and their coefficients            │
+│    💡 "Strings describe operators, coeffs are weights"          │
+│                                                                  │
+│ 🗺️ "Layout After Transpile" - OBSERVABLE REMAPPING             │
+│    After transpilation, qubits may be remapped                  │
+│    → Must use: obs.apply_layout(transpiled.layout)              │
+│    💡 "Transpile changes map, update observable GPS"            │
+│                                                                  │
+│ 🚀 "Precision ≠ Accuracy" - HARDWARE LIMITATION                 │
+│    precision parameter is target, not guarantee                 │
+│    → Hardware noise limits achievable precision                 │
+│    → Higher precision = more shots = slower                     │
+│    💡 "Ask for precision, get what hardware can deliver"        │
+│                                                                  │
+│ 🎚️ "Gamma Before Beta" - QAOA PARAMETERS                       │
+│    QAOA parameters: (γ, β) in alphabetical order                │
+│    → γ controls Cost layer                                      │
+│    → β controls Mixer layer                                     │
+│    💡 "Alphabetical: Cost before Mixer"                         │
+│                                                                  │
+│ 🔄 "assign_parameters Returns New" - BINDING BEHAVIOR           │
+│    assign_parameters() creates NEW circuit, doesn't modify      │
+│    → bound_qc = qc.assign_parameters([...])                     │
+│    → Original qc unchanged                                      │
+│    💡 "Binding is non-destructive"                              │
+│                                                                  │
+│ 📊 "evs is Array Not Scalar" - TYPE AWARENESS                   │
+│    result[0].data.evs is numpy array, even for single observable│
+│    → Must index: ev = result[0].data.evs[0]                     │
+│    💡 "evs = array of values, need [0] to extract first"        │
+│                                                                  │
+│ ⚡ "V2 Only" - VERSION ENFORCEMENT                              │
+│    Only use V2 primitives: StatevectorEstimator, EstimatorV2    │
+│    → V1 (Estimator) is deprecated                               │
+│    💡 "V2 is the way, V1 is yesterday"                          │
+│                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## One-Page Summary Box
-
+### 📋 One-Page Summary Box
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                      ESTIMATOR QUICK REFERENCE                                │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  BASIC USAGE                                                                  │
-│  ───────────                                                                 │
-│  from qiskit.primitives import StatevectorEstimator                          │
-│  from qiskit.quantum_info import SparsePauliOp                               │
-│                                                                               │
-│  qc = QuantumCircuit(2)  # NO measurements!                                  │
-│  qc.h(0); qc.cx(0, 1)                                                        │
-│  obs = SparsePauliOp('ZZ')                                                   │
-│                                                                               │
-│  estimator = StatevectorEstimator()                                          │
-│  job = estimator.run([(qc, obs)])                                            │
-│  evs = job.result()[0].data.evs                                              │
-│                                                                               │
-│  SPARSEPAULI STRING ORDER                                                     │
-│  ────────────────────────                                                    │
-│  SparsePauliOp('XIZ') = X⊗I⊗Z                                                │
-│    Position 0 (X) → qubit 0                                                  │
-│    Position 1 (I) → qubit 1                                                  │
-│    Position 2 (Z) → qubit 2                                                  │
-│                                                                               │
-│  PUB FORMATS                                                                  │
-│  ───────────                                                                 │
-│  Basic:      [(circuit, observable)]                                         │
-│  With params: [(circuit, observable, [param_values])]                        │
-│  Full:       [(circuit, observable, [params], precision)]                    │
-│                                                                               │
-│  VQE PATTERN                                                                  │
-│  ───────────                                                                 │
-│  1. H = SparsePauliOp(['ZZ', 'XX'], [1.0, 0.5])  # Hamiltonian               │
-│  2. ansatz = parameterized circuit (NO measurements)                         │
-│  3. def cost(p): return estimator.run([(ansatz.assign_parameters(p), H)])   │
-│  4. result = minimize(cost, initial, method='COBYLA')                        │
-│                                                                               │
-│  QAOA PATTERN                                                                 │
-│  ────────────                                                                │
-│  1. qc.h(all)           # Initial superposition                              │
-│  2. qc.rzz(2γ, i, j)    # Cost layer (for each edge)                        │
-│  3. qc.rx(2β, i)        # Mixer layer (for each qubit)                      │
-│  4. minimize(qaoa_cost, [γ₀, β₀], method='COBYLA')                          │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  ⚠️ TOP EXAM TRAPS                                                            │
-│  ──────────────────                                                          │
-│  ❌ qc.measure_all() with Estimator        # No measurements!                 │
-│  ❌ estimator.run([(qc, 'ZZ')])            # SparsePauliOp not string!        │
-│  ❌ result[0].evs                          # Missing .data!                   │
-│  ❌ result[0].data.ev                      # Missing 's' (plural)!            │
-│  ❌ (qc, obs, 0.5)                         # Params must be [0.5]!            │
-│  ✅ result[0].data.evs                     # CORRECT                          │
-└──────────────────────────────────────────────────────────────────────────────┘
+╔═══════════════════════════════════════════════════════════════════════╗
+║         SECTION 6: ESTIMATOR - ONE-PAGE SUMMARY                       ║
+║                      (12% of Exam - ~8 Questions)                      ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║                                                                        ║
+║  🎯 BASIC USAGE WORKFLOW                                               ║
+║  ├─ 1. IMPORTS                                                         ║
+║  │   ├─ from qiskit.primitives import StatevectorEstimator  # ideal  ║
+║  │   ├─ from qiskit_ibm_runtime import EstimatorV2  # hardware       ║
+║  │   └─ from qiskit.quantum_info import SparsePauliOp                ║
+║  ├─ 2. CREATE CIRCUIT WITHOUT MEASUREMENTS (CRITICAL!)                ║
+║  │   ├─ qc = QuantumCircuit(2)  # NO ClassicalRegister               ║
+║  │   ├─ qc.h(0); qc.cx(0,1)  # quantum operations                     ║
+║  │   └─ NO qc.measure_all()! ← Estimator FORBIDS measurements        ║
+║  ├─ 3. CREATE OBSERVABLE                                               ║
+║  │   └─ obs = SparsePauliOp('ZZ')  # must match circuit qubit count  ║
+║  ├─ 4. INITIALIZE ESTIMATOR                                            ║
+║  │   └─ estimator = StatevectorEstimator()  # or EstimatorV2(backend)║
+║  ├─ 5. RUN WITH PUB FORMAT                                             ║
+║  │   └─ job = estimator.run([(qc, obs)])  # (circuit, observable)    ║
+║  ├─ 6. EXTRACT EXPECTATION VALUES                                      ║
+║  │   ├─ result = job.result()  # PrimitiveResult                     ║
+║  │   └─ ev = result[0].data.evs[0]  # note: evs is array, [0] index!║
+║  └─ Key: NO measurements, MUST have observable, evs plural            ║
+║                                                                        ║
+║  📊 SPARSEPAULI ORDERING (Critical for Exam!)                          ║
+║  ├─ Convention: Leftmost character = qubit 0 (OPPOSITE of bitstrings)║
+║  ├─ Examples:                                                          ║
+║  │   ├─ SparsePauliOp('XIZ') = X⊗I⊗Z                                  ║
+║  │   │   ├─ X acts on qubit 0 (leftmost)                              ║
+║  │   │   ├─ I acts on qubit 1 (middle)                                ║
+║  │   │   └─ Z acts on qubit 2 (rightmost)                             ║
+║  │   ├─ SparsePauliOp('ZZ') = Z⊗Z on qubits 0,1                       ║
+║  │   └─ Position matches qubit: string[i] → qubit i                   ║
+║  └─ TRAP: Bitstrings use opposite convention! (rightmost = q0)        ║
+║                                                                        ║
+║  📦 PUB FORMATS (Primitive Unified Bloc)                               ║
+║  ├─ Anatomy: (circuit, observable, parameters, precision)             ║
+║  │   ├─ circuit: QuantumCircuit WITHOUT measurements                  ║
+║  │   ├─ observable: SparsePauliOp (REQUIRED for Estimator!)           ║
+║  │   ├─ parameters: list of values or None (optional)                 ║
+║  │   └─ precision: float target or None (optional)                    ║
+║  ├─ EXAMPLES:                                                          ║
+║  │   ├─ Basic:           [(qc, obs)]                # minimal         ║
+║  │   ├─ With params:     [(qc, obs, [0.5, 1.2])]  # 2 param values   ║
+║  │   ├─ With precision:  [(qc, obs, None, 0.01)]  # None placeholder ║
+║  │   ├─ Full spec:       [(qc, obs, [0.5], 0.01)] # all specified    ║
+║  │   └─ Multiple PUBs:   [(qc1, obs1), (qc2, obs2), (qc3, obs3)]     ║
+║  └─ Critical: Observable REQUIRED (unlike Sampler where it's absent)  ║
+║                                                                        ║
+║  🔗 RESULT EXTRACTION CHAIN (MEMORIZE!)                                ║
+║  ├─ Full path: result[0].data.evs[0]                                  ║
+║  │   ├─ result       → PrimitiveResult (list-like container)          ║
+║  │   ├─ [0]          → Index first PUB (PubResult object)             ║
+║  │   ├─ .data        → DataBin (holds expectation value arrays)       ║
+║  │   ├─ .evs         → Array of expectation values (PLURAL!)          ║
+║  │   └─ [0]          → Index first observable (evs is array)          ║
+║  ├─ Alternative attributes:                                            ║
+║  │   └─ .stds        → Array of standard deviations (also plural!)    ║
+║  ├─ Multiple observables:                                              ║
+║  │   ├─ evs = result[0].data.evs  # all values: [⟨O₁⟩, ⟨O₂⟩, ...]    ║
+║  │   └─ stds = result[0].data.stds  # all stds: [σ₁, σ₂, ...]        ║
+║  └─ Multi-PUB indexing:                                                ║
+║      ├─ result[0].data.evs  # first circuit-observable                ║
+║      ├─ result[1].data.evs  # second circuit-observable               ║
+║      └─ result[i].data.evs  # i-th PUB                                ║
+║                                                                        ║
+║  🔄 MULTIPLE OBSERVABLES (Efficiency Pattern)                          ║
+║  ├─ Single circuit, multiple observables (efficient!):                ║
+║  │   ├─ obs_list = [SparsePauliOp('ZZ'), SparsePauliOp('XX')]        ║
+║  │   ├─ job = estimator.run([(qc, obs_list)])  # one PUB             ║
+║  │   ├─ evs = result[0].data.evs  # array: [⟨ZZ⟩, ⟨XX⟩]              ║
+║  │   └─ Benefit: shares circuit evaluation across observables         ║
+║  └─ Multiple PUBs (separate circuits):                                 ║
+║      ├─ job = estimator.run([(qc1, obs1), (qc2, obs2)])               ║
+║      ├─ ev1 = result[0].data.evs[0]  # from qc1                       ║
+║      └─ ev2 = result[1].data.evs[0]  # from qc2                       ║
+║                                                                        ║
+║  🧬 VQE PATTERN (Variational Quantum Eigensolver)                      ║
+║  ├─ Purpose: Find ground state energy of Hamiltonian                  ║
+║  ├─ Components:                                                        ║
+║  │   ├─ H = SparsePauliOp([...])  # Hamiltonian (energy operator)    ║
+║  │   ├─ ansatz = parameterized circuit (NO measurements)              ║
+║  │   ├─ cost_func: params → ⟨H⟩ (expectation value)                   ║
+║  │   └─ optimizer: minimize cost_func (COBYLA recommended)            ║
+║  ├─ Complete workflow:                                                 ║
+║  │   ├─ 1. def cost_function(params):                                 ║
+║  │   │       bound_qc = ansatz.assign_parameters(params)              ║
+║  │   │       job = estimator.run([(bound_qc, H)])                     ║
+║  │   │       return job.result()[0].data.evs[0]                       ║
+║  │   ├─ 2. initial_params = [0.0, 0.0]  # or random                  ║
+║  │   ├─ 3. result = minimize(cost_function, initial_params,           ║
+║  │   │                        method='COBYLA')                        ║
+║  │   ├─ 4. optimal_energy = result.fun                                ║
+║  │   └─ 5. optimal_params = result.x                                  ║
+║  └─ Key: Ansatz NO measurements, use COBYLA (gradient-free)           ║
+║                                                                        ║
+║  🔄 QAOA PATTERN (Quantum Approximate Optimization Algorithm)          ║
+║  ├─ Purpose: Approximate solution to combinatorial optimization       ║
+║  ├─ Structure (MEMORIZE ORDER!):                                       ║
+║  │   ├─ 1. Initial state: qc.h(range(n))  # equal superposition      ║
+║  │   ├─ 2. Cost layer: encode problem (γ parameter)                  ║
+║  │   │   └─ qc.rzz(2*gamma, i, j)  # for each problem edge           ║
+║  │   ├─ 3. Mixer layer: maintain superposition (β parameter)          ║
+║  │   │   └─ qc.rx(2*beta, i)  # for each qubit                       ║
+║  │   └─ 4. NO measurements! (Use Estimator to get ⟨H⟩)                ║
+║  ├─ Parameter convention:                                              ║
+║  │   ├─ γ (gamma) controls Cost layer                                 ║
+║  │   ├─ β (beta) controls Mixer layer                                 ║
+║  │   └─ Order: (γ, β) - "Cost then Mixer" or "CostMix"                ║
+║  ├─ Complete example:                                                  ║
+║  │   ├─ def qaoa_cost(params):                                        ║
+║  │   │       gamma, beta = params                                     ║
+║  │   │       qc = build_qaoa_circuit(gamma, beta)                     ║
+║  │   │       job = estimator.run([(qc, cost_hamiltonian)])            ║
+║  │   │       return job.result()[0].data.evs[0]                       ║
+║  │   └─ result = minimize(qaoa_cost, [0.5, 0.5], method='COBYLA')    ║
+║  └─ Critical: Cost BEFORE Mixer (γ before β)                          ║
+║                                                                        ║
+║  ⚙️ ADVANCED OPTIONS (estimator.options)                               ║
+║  ├─ Error mitigation:                                                  ║
+║  │   ├─ .resilience_level = 0  # none (ideal/fastest)                ║
+║  │   ├─ .resilience_level = 1  # M3 mitigation (moderate)            ║
+║  │   └─ .resilience_level = 2  # M3+ZNE (best but 5-10x slower)      ║
+║  ├─ Twirling (randomized compilation):                                ║
+║  │   ├─ .twirling.enable_gates = True   # default ON for Estimator  ║
+║  │   ├─ .twirling.enable_measure = True # default ON for Estimator  ║
+║  │   └─ .twirling.num_randomizations = 32  # rounds of randomization ║
+║  ├─ Circuit optimization:                                              ║
+║  │   ├─ .optimization_level = 3  # transpiler (0-3)                  ║
+║  │   └─ .default_precision = 0.01  # target precision                ║
+║  └─ Dynamical Decoupling:                                              ║
+║      ├─ .dynamical_decoupling.enable = True                           ║
+║      └─ .dynamical_decoupling.sequence_type = 'XY4'                   ║
+║                                                                        ║
+║  🎭 ESTIMATOR VS SAMPLER (Key Differences)                             ║
+║  ├─ Estimator:                                                         ║
+║  │   ├─ NO measurements (FORBIDDEN!)                                   ║
+║  │   ├─ Returns: expectation values ⟨ψ|O|ψ⟩ (continuous floats)       ║
+║  │   ├─ PUB format: (circuit, observable)                             ║
+║  │   ├─ Use case: VQE, QAOA, computing energies/observables           ║
+║  │   ├─ Result: result[0].data.evs (array of floats)                  ║
+║  │   └─ Twirling defaults: gates=True, measure=True (both ON)         ║
+║  ├─ Sampler:                                                           ║
+║  │   ├─ Measurements REQUIRED                                          ║
+║  │   ├─ Returns: counts/bitstrings (discrete outcomes)                 ║
+║  │   ├─ PUB format: (circuit,) - no observable                        ║
+║  │   ├─ Use case: sampling probability distributions                   ║
+║  │   ├─ Result: result[0].data.meas.get_counts() (dict)               ║
+║  │   └─ Twirling defaults: gates=False, measure=False (both OFF)      ║
+║  └─ Key: Mutually exclusive patterns - NEVER mix!                     ║
+║                                                                        ║
+║  🔢 OBSERVABLE CONSTRUCTION                                            ║
+║  ├─ Single Pauli string:                                               ║
+║  │   ├─ SparsePauliOp('Z')    # single qubit                          ║
+║  │   ├─ SparsePauliOp('ZZ')   # two qubits                            ║
+║  │   └─ SparsePauliOp('XIZ')  # three qubits (X⊗I⊗Z)                  ║
+║  ├─ Weighted sum (Hamiltonian):                                        ║
+║  │   ├─ SparsePauliOp(['ZZ', 'XX'], [1.0, 0.5])  # 1.0*ZZ + 0.5*XX   ║
+║  │   └─ Alternative: SparsePauliOp.from_list([('ZZ', 1.0), ...])     ║
+║  ├─ Qubit count constraint:                                            ║
+║  │   └─ Must match circuit: 3-qubit circuit → 3-char Pauli string     ║
+║  └─ Special cases:                                                     ║
+║      ├─ Identity: SparsePauliOp('III') → always returns 1.0           ║
+║      └─ After transpile: obs.apply_layout(layout) to remap qubits     ║
+║                                                                        ║
+║  ⚠️ TOP 15 EXAM TRAPS (HIGHEST PRIORITY!)                              ║
+║  ╔════════════════════════════════════════════════════════════════╗  ║
+║  ║ 1. ❌ Adding measurements → Estimator ERROR (not warning!)      ║  ║
+║  ║    ✓ NEVER use measure() or measure_all() with Estimator       ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 2. ❌ Using string observable: estimator.run([(qc, 'ZZ')])      ║  ║
+║  ║    ✓ MUST use SparsePauliOp: run([(qc, SparsePauliOp('ZZ'))])  ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 3. ❌ result[0].evs - missing .data                             ║  ║
+║  ║    ✓ CORRECT: result[0].data.evs (never skip .data!)           ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 4. ❌ result[0].data.ev - using singular (no such attribute!)   ║  ║
+║  ║    ✓ CORRECT: result[0].data.evs (plural with s!)              ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 5. ❌ Parameters as scalar: (qc, obs, 0.5)                      ║  ║
+║  ║    ✓ MUST be list: (qc, obs, [0.5]) even for single param!     ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 6. ❌ Using Sampler PUB format: [(qc,)]                         ║  ║
+║  ║    ✓ Estimator needs observable: [(qc, obs)]                   ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 7. ❌ Gradient optimizers: BFGS, L-BFGS-B (fail with noise)     ║  ║
+║  ║    ✓ Use gradient-free: method='COBYLA' or 'SPSA'              ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 8. ❌ QAOA order: Mixer then Cost                               ║  ║
+║  ║    ✓ CORRECT: Cost then Mixer (γ before β) "CostMix"           ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 9. ❌ Ordering: 'ZIX' means X on q0 (WRONG!)                    ║  ║
+║  ║    ✓ SparsePauliOp 'ZIX' = Z on q0, I on q1, X on q2 (L→R)     ║  ║
+║  ║    ✓ OPPOSITE of bitstrings! ('01' = rightmost q0)             ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 10. ❌ Not using apply_layout() after transpilation             ║  ║
+║  ║     ✓ MUST remap: obs.apply_layout(transpiled.layout)          ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 11. ❌ Twirling defaults: assuming same as Sampler              ║  ║
+║  ║     ✓ Estimator: gates=True, measure=True (both ON)            ║  ║
+║  ║     ✓ Sampler: gates=False, measure=False (both OFF)           ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 12. ❌ Observable qubit mismatch: 3-qubit circuit, 'ZZ' obs     ║  ║
+║  ║     ✓ MUST match: 3 qubits → 'ZZI' or 'XIZ' (3 chars)          ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 13. ❌ Forgetting assign_parameters() in VQE loop               ║  ║
+║  ║     ✓ MUST bind: bound = ansatz.assign_parameters(params)      ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 14. ❌ Treating evs as scalar when it's array                   ║  ║
+║  ║     ✓ evs is array: use evs[0] to extract single value         ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 15. ❌ Using V1 import: from qiskit.primitives import Estimator ║  ║
+║  ║     ✓ CORRECT V2: import StatevectorEstimator or EstimatorV2   ║  ║
+║  ╚════════════════════════════════════════════════════════════════╝  ║
+║                                                                        ║
+║  💡 MEMORY AIDS (CRITICAL!)                                            ║
+║  ├─ "ENM" - Estimator No Measures (MOST CRITICAL!)                    ║
+║  ├─ "TiPO" - Tensor in Pauli Order (leftmost = q0)                    ║
+║  ├─ "0-D-EVS" - result[0].data.evs chain (plural!)                    ║
+║  ├─ "COPP" - Circuit Observable Params Precision                      ║
+║  ├─ "COBYLA for Quantum" - gradient-free optimizer                    ║
+║  ├─ "CostMix" - Cost layer then Mixer layer (γ before β)              ║
+║  ├─ "012 = None-M3-ZNE" - resilience levels                           ║
+║  └─ "GMGM vs GOMO" - Estimator (on/on) vs Sampler (off/off)           ║
+║                                                                        ║
+╚═══════════════════════════════════════════════════════════════════════╝
 ```
 
 ---

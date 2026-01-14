@@ -1711,109 +1711,831 @@ print(qasm3_output)
 
 ---
 
-# 💡 Key Takeaways
+## ✅ Key Takeaways
 
-## Concept Mastery Checklist
-
+### 📚 Concept Checklist
 ```
-□ I understand the difference between QASM 2.0 and QASM 3.0 syntax
-□ I know qasm2 module uses loads()/dumps()/load()/dump()
-□ I know qasm3 module uses loads()/dumps()/load()/dump()
-□ I understand QuantumCircuit has legacy methods (qasm(), from_qasm_str(), from_qasm_file())
-□ I know the difference between string methods (*s) and file methods (no s)
-□ I can identify QASM version from header (OPENQASM 2.0 vs 3.0)
-□ I know include file differences (qelib1.inc vs stdgates.inc)
-□ I understand register syntax differences (qreg/creg vs qubit[]/bit[])
-□ I know measurement syntax (arrow vs assignment)
+CORE CONCEPTS - Version Differences
+□ QASM 2.0 vs 3.0: Different syntax for headers, includes, registers, and measurements
+□ QASM 2.0 is legacy format, widely supported, simpler syntax
+□ QASM 3.0 is modern format with programming language features
+□ QASM header MUST be first line: "OPENQASM 2.0;" or "OPENQASM 3.0;"
+□ Version number in header determines parser behavior
+□ QASM 2.0 header is case-sensitive: "OPENQASM" (not "OpenQASM")
+□ QASM 3.0 supports backwards compatibility with 2.0 constructs
+□ Include statement MUST come after OPENQASM header
+□ qelib1.inc provides gate library for QASM 2.0
+□ stdgates.inc provides standard gates for QASM 3.0
+□ Cannot mix QASM 2.0 and 3.0 syntax in same file
+□ QASM files typically use .qasm extension for both versions
+□ QASM is human-readable text format (not binary)
+
+MODULE FUNCTIONS - qasm2 and qasm3
+□ qasm2 module functions: loads(), dumps(), load(), dump() for QASM 2.0
+□ qasm3 module functions: loads(), dumps(), load(), dump() for QASM 3.0
+□ Both modules must be explicitly imported: from qiskit import qasm2, qasm3
+□ qasm2 and qasm3 are separate modules (not submodules of QuantumCircuit)
+□ String methods end with 's': loads()/dumps() work with strings
+□ File methods without 's': load()/dump() work with file objects
+□ loads() returns QuantumCircuit object from QASM string
+□ dumps() returns QASM string from QuantumCircuit object
+□ load() returns QuantumCircuit object from file object
+□ dump() writes QASM to file object (returns None)
+□ All functions accept QuantumCircuit as input for export
+□ All functions return QuantumCircuit for import operations
+□ qasm2/qasm3 functions are NOT methods of QuantumCircuit
+
+LEGACY QUANTUMCIRCUIT METHODS
+□ QuantumCircuit legacy methods: qasm(), from_qasm_str(), from_qasm_file()
+□ qc.qasm() is instance method - exports to QASM 2.0 ONLY
+□ qc.qasm() returns string (equivalent to qasm2.dumps(qc))
+□ from_qasm_str() is STATIC method (call on QuantumCircuit class)
+□ from_qasm_file() is STATIC method (call on QuantumCircuit class)
+□ from_qasm_str() accepts QASM 2.0 string only (not 3.0)
+□ from_qasm_file() accepts filepath string (not file object)
+□ from_qasm_file() opens and closes file automatically
+□ Legacy methods maintained for backward compatibility
+□ Prefer qasm2/qasm3 modules for new code (more explicit)
+
+REGISTER SYNTAX DIFFERENCES
+□ Register syntax: qreg/creg (QASM 2.0) vs qubit[]/bit[] (QASM 3.0)
+□ QASM 2.0: qreg q[5]; declares 5-qubit quantum register
+□ QASM 2.0: creg c[5]; declares 5-bit classical register
+□ QASM 3.0: qubit[5] q; declares 5-qubit register (type-first syntax)
+□ QASM 3.0: bit[5] c; declares 5-bit classical register
+□ Register names must start with lowercase letter in both versions
+□ Register size is specified in brackets: [n] for n qubits/bits
+□ Individual qubit/bit access uses zero-based indexing: q[0], q[1], etc.
+□ Registers must be declared before use in circuit
+□ QASM 2.0 allows multiple qreg/creg declarations
+□ QASM 3.0 supports array syntax for modern programming style
+
+MEASUREMENT SYNTAX DIFFERENCES
+□ Measurement syntax: arrow (QASM 2.0) vs assignment (QASM 3.0)
+□ QASM 2.0: measure q[0] -> c[0]; (arrow from qubit to classical bit)
+□ QASM 3.0: c[0] = measure q[0]; (assignment style)
+□ QASM 2.0 arrow direction: qubit -> classical (left to right)
+□ QASM 3.0 reverses order: classical = qubit (assignment semantics)
+□ Both syntaxes measure single qubit to single classical bit
+□ Can measure entire register: measure q -> c; (QASM 2.0)
+□ Semicolon required at end of measurement statement in both versions
+□ Measurement is destructive operation (collapses qubit state)
+
+GATE DEFINITIONS AND OPERATIONS
+□ Standard gates: h, x, y, z, s, t, rx, ry, rz, cx, etc.
+□ Custom gates can be defined in QASM using 'gate' keyword
+□ Gate parameters use parentheses: rx(pi/4) q[0];
+□ Gate targets use brackets: cx q[0], q[1];
+□ QASM 2.0 gates come from qelib1.inc include
+□ QASM 3.0 gates come from stdgates.inc include
+□ Gate definitions support parameterization with angles
+□ U gate is universal single-qubit gate: U(θ,φ,λ)
+□ CX gate is controlled-NOT (CNOT) in both versions
+
+QASM 3.0 ADVANCED FEATURES
+□ QASM 3.0 supports more features (conditionals, loops, expressions)
+□ QASM 3.0 allows if statements: if (c == 1) { ... }
+□ QASM 3.0 allows for loops: for i in [0:5] { ... }
+□ QASM 3.0 supports arithmetic expressions: angle = pi/4 + theta;
+□ QASM 3.0 has real type for floating-point values
+□ QASM 3.0 supports classical computation within circuit
+□ QASM 3.0 allows function definitions (not in 2.0)
+□ QASM 3.0 supports arrays and complex data types
+
+IMPORT/EXPORT CONSTRAINTS
+□ Roundtrip import/export may lose some circuit information
+□ Not all Qiskit features can be represented in QASM
+□ Custom gates may need manual definitions in QASM
+□ Metadata, labels, and names may not survive roundtrip
+□ Complex instructions may be decomposed during export
+□ Parameter expressions might be evaluated during export
+□ Circuit barriers may or may not be preserved
+□ Some optimizations may be applied during import/export
+
+VERSION DETECTION AND COMPATIBILITY
+□ QASM version identified by header: "OPENQASM 2.0;" vs "OPENQASM 3.0;"
+□ Parser automatically detects version from header
+□ Cannot parse QASM 3.0 file with qasm2 module (will error)
+□ Cannot parse QASM 2.0 features with qasm3 if incompatible
+□ Version mismatch causes parse errors
+□ No automatic version conversion (must use qasm2→qasm3 explicitly)
 ```
 
-## Code Mastery Checklist
-
+### 💻 Code Pattern Checklist
 ```
-□ I can export circuit to QASM 2.0: qc.qasm() or qasm2.dumps(qc)
-□ I can export circuit to QASM 3.0: qasm3.dumps(qc)
-□ I can import QASM 2.0 string: qasm2.loads(string) or QuantumCircuit.from_qasm_str(string)
-□ I can import QASM 3.0 string: qasm3.loads(string)
-□ I can save to file: qasm2.dump(qc, file) or qasm3.dump(qc, file)
-□ I can load from file: qasm2.load(file) or qasm3.load(file)
-□ I can convert QASM 2.0 to 3.0: qasm3.dumps(qasm2.loads(qasm2_string))
-□ I can check circuit validity after roundtrip import/export
+IMPORT STATEMENTS
+□ from qiskit import QuantumCircuit - imports QuantumCircuit class
+□ from qiskit import qasm2 - imports QASM 2.0 module
+□ from qiskit import qasm3 - imports QASM 3.0 module
+□ from qiskit import qasm2, qasm3 - imports both modules (recommended)
+□ from qiskit.qasm2 import loads, dumps - import specific functions
+□ from qiskit.qasm3 import loads, dumps - import specific functions
+□ No need to import QuantumCircuit.qasm() (already instance method)
+□ qasm2/qasm3 are top-level imports from qiskit package
+
+EXPORT TO STRING - dumps() and qasm()
+□ qc.qasm() exports circuit to QASM 2.0 string (instance method)
+□ qc.qasm() returns str type
+□ qc.qasm() takes NO parameters (parameterless method)
+□ qasm2.dumps(qc) exports circuit to QASM 2.0 string (function)
+□ qasm2.dumps(qc) returns str type
+□ qasm2.dumps(circuit) takes QuantumCircuit as first parameter
+□ qasm3.dumps(qc) exports circuit to QASM 3.0 string (function)
+□ qasm3.dumps(qc) returns str type
+□ qasm3.dumps(circuit) takes QuantumCircuit as first parameter
+□ qc.qasm() == qasm2.dumps(qc) - equivalent QASM 2.0 exports
+□ print(qc.qasm()) - display QASM 2.0 string to console
+□ print(qasm3.dumps(qc)) - display QASM 3.0 string to console
+□ qasm_str = qc.qasm() - store QASM 2.0 string in variable
+□ qasm3_str = qasm3.dumps(qc) - store QASM 3.0 string in variable
+
+EXPORT TO FILE - dump() Methods
+□ qasm2.dump(qc, file) writes circuit to QASM 2.0 file (function)
+□ qasm2.dump(circuit, file) takes QuantumCircuit and file object
+□ qasm2.dump() returns None (writes to file, no return value)
+□ qasm3.dump(qc, file) writes circuit to QASM 3.0 file (function)
+□ qasm3.dump(circuit, file) takes QuantumCircuit and file object
+□ qasm3.dump() returns None (writes to file, no return value)
+□ with open('circuit.qasm', 'w') as f: qasm2.dump(qc, f) - QASM 2.0 file write
+□ with open('circuit.qasm', 'w') as f: qasm3.dump(qc, f) - QASM 3.0 file write
+□ File must be opened in write mode 'w' for dump()
+□ dump() parameter order: (circuit, file) NOT (file, circuit)
+□ Always use context manager (with open) for file safety
+□ dump() automatically flushes and writes to disk
+
+IMPORT FROM STRING - loads() and from_qasm_str()
+□ qasm2.loads(string) imports QASM 2.0 string (function)
+□ qasm2.loads(qasm_str) returns QuantumCircuit object
+□ qasm2.loads(str) takes string as only required parameter
+□ qasm3.loads(string) imports QASM 3.0 string (function)
+□ qasm3.loads(qasm_str) returns QuantumCircuit object
+□ qasm3.loads(str) takes string as only required parameter
+□ QuantumCircuit.from_qasm_str(string) imports QASM 2.0 string (STATIC!)
+□ QuantumCircuit.from_qasm_str(s) is CLASS method (call on QuantumCircuit)
+□ QuantumCircuit.from_qasm_str(s) returns QuantumCircuit object
+□ QuantumCircuit.from_qasm_str() ONLY works with QASM 2.0 (not 3.0)
+□ from_qasm_str() is legacy method (prefer qasm2.loads() for clarity)
+□ qc = qasm2.loads(qasm_string) - import QASM 2.0 string
+□ qc = qasm3.loads(qasm_string) - import QASM 3.0 string
+□ qc = QuantumCircuit.from_qasm_str(qasm_string) - legacy QASM 2.0 import
+
+IMPORT FROM FILE - load() and from_qasm_file()
+□ qasm2.load(file) imports QASM 2.0 from file object (function)
+□ qasm2.load(file_obj) returns QuantumCircuit object
+□ qasm2.load(f) takes file object as parameter (not filepath string)
+□ qasm3.load(file) imports QASM 3.0 from file object (function)
+□ qasm3.load(file_obj) returns QuantumCircuit object
+□ qasm3.load(f) takes file object as parameter (not filepath string)
+□ QuantumCircuit.from_qasm_file(filepath) imports QASM 2.0 file (STATIC!)
+□ QuantumCircuit.from_qasm_file(path) is CLASS method (call on QuantumCircuit)
+□ QuantumCircuit.from_qasm_file(path) returns QuantumCircuit object
+□ from_qasm_file() takes filepath STRING (not file object)
+□ from_qasm_file() opens/closes file automatically (convenience method)
+□ from_qasm_file() is legacy method (prefer qasm2.load() for clarity)
+□ with open('circuit.qasm', 'r') as f: qc = qasm2.load(f) - QASM 2.0 file import
+□ with open('circuit.qasm', 'r') as f: qc = qasm3.load(f) - QASM 3.0 file import
+□ qc = QuantumCircuit.from_qasm_file('circuit.qasm') - legacy QASM 2.0 import
+□ File must be opened in read mode 'r' for load()
+
+PARAMETER TYPES AND RETURN VALUES
+□ dumps(circuit) parameter: QuantumCircuit object (required)
+□ dumps() return type: str (QASM string)
+□ dump(circuit, file) parameters: QuantumCircuit, file object (both required)
+□ dump() return type: None (side effect: writes to file)
+□ loads(string) parameter: str (QASM string, required)
+□ loads() return type: QuantumCircuit object
+□ load(file) parameter: file object in read mode (required)
+□ load() return type: QuantumCircuit object
+□ qasm() parameter: None (parameterless method)
+□ qasm() return type: str (QASM 2.0 string)
+□ from_qasm_str(string) parameter: str (QASM 2.0 string, required)
+□ from_qasm_str() return type: QuantumCircuit object
+□ from_qasm_file(filepath) parameter: str (filepath, required)
+□ from_qasm_file() return type: QuantumCircuit object
+
+CONVERSION PATTERNS
+□ qasm3.dumps(qasm2.loads(qasm2_str)) converts QASM 2.0 to 3.0
+□ qasm2.dumps(qasm3.loads(qasm3_str)) converts QASM 3.0 to 2.0 (if compatible)
+□ qc_copy = qasm2.loads(qc.qasm()) - create copy via QASM roundtrip
+□ qc_copy = qasm2.loads(qasm2.dumps(qc)) - alternative roundtrip
+□ Conversion may lose version-specific features (e.g., QASM 3.0 loops)
+□ Always test roundtrip fidelity for critical circuits
+
+ROUNDTRIP TESTING
+□ imported_qc = qasm2.loads(qc.qasm()) roundtrip test
+□ assert qc == imported_qc may fail (use circuit equivalence check)
+□ Compare circuit depth, gate count, qubit count after roundtrip
+□ qasm_str = qc.qasm(); qc2 = qasm2.loads(qasm_str) - two-step roundtrip
+□ Verify gate sequence preserved: qc.data == imported_qc.data (may differ)
+
+FILE PATH HANDLING
+□ Use raw strings for Windows paths: r'C:\Users\file.qasm'
+□ Use forward slashes for cross-platform: 'path/to/circuit.qasm'
+□ Relative paths: './circuit.qasm' or 'circuits/bell.qasm'
+□ Absolute paths: '/home/user/circuit.qasm'
+□ Path objects: from pathlib import Path; Path('circuit.qasm')
+□ Check file exists: import os; os.path.exists('circuit.qasm')
+
+ERROR HANDLING PATTERNS
+□ try: qc = qasm2.loads(qasm_str) except Exception as e: print(e)
+□ Catch parse errors for invalid QASM syntax
+□ Catch FileNotFoundError for missing files
+□ Catch PermissionError for file access issues
+□ Validate QASM header before parsing
+□ Check version compatibility before loading
+
+COMMON USAGE PATTERNS
+□ Save circuit: with open('out.qasm', 'w') as f: qasm2.dump(qc, f)
+□ Load circuit: with open('in.qasm', 'r') as f: qc = qasm2.load(f)
+□ Quick export: qasm_string = qc.qasm()
+□ Quick import: qc = QuantumCircuit.from_qasm_str(qasm_string)
+□ Version conversion: qasm3_str = qasm3.dumps(qasm2.loads(qasm2_str))
+□ String comparison: assert qc.qasm() == qasm2.dumps(qc)
+□ Print to file: print(qc.qasm(), file=open('out.qasm', 'w'))
+□ Read from file: qasm_str = open('circuit.qasm').read(); qc = qasm2.loads(qasm_str)
+
+EQUIVALENCE CHECKS
+□ qc.qasm() == qasm2.dumps(qc) - ALWAYS True (equivalent methods)
+□ qasm2.loads(qc.qasm()) creates equivalent circuit (not identical object)
+□ Use circuit.depth(), circuit.size() for structural comparison
+□ Compare num_qubits, num_clbits for register compatibility
+□ Whitespace and comments may differ in QASM string output
 ```
 
-## Trap Avoidance Checklist
-
+### ⚠️ Exam Trap Checklist
 ```
-□ I know from_qasm_str() is STATIC (call on class, not instance)
-□ I know from_qasm_file() is STATIC (call on class, not instance)  
-□ I won't confuse loads() (string) with load() (file)
-□ I won't confuse dumps() (string) with dump() (file)
-□ I won't mix QASM 2.0 include files with QASM 3.0 code
-□ I won't use arrow syntax in QASM 3.0 measurements
-□ I remember qc.qasm() returns QASM 2.0, not 3.0
-□ I know qasm2/qasm3 modules are functions, not methods
+STATIC METHOD TRAPS
+□ TRAP: Calling from_qasm_str() on instance
+  → qc.from_qasm_str(string) is WRONG (not an instance method)
+  → Use: QuantumCircuit.from_qasm_str(string) (STATIC class method)
+  → Error: AttributeError or unexpected behavior
+□ TRAP: Calling from_qasm_file() on instance
+  → qc.from_qasm_file(path) is WRONG (not an instance method)
+  → Use: QuantumCircuit.from_qasm_file(path) (STATIC class method)
+  → Error: AttributeError or unexpected behavior
+□ TRAP: Treating from_qasm_* as factory instance methods
+  → These are CLASS methods, not instance methods
+  → Always call on QuantumCircuit class, not qc object
+  → Similar to @staticmethod or @classmethod in Python
+□ TRAP: Expecting from_qasm_str() to modify existing circuit
+  → from_qasm_str() creates NEW circuit, doesn't modify existing
+  → Returns new QuantumCircuit object
+  → Original circuit unchanged
+
+STRING VS FILE OBJECT TRAPS
+□ TRAP: Confusing loads() with load()
+  → loads() expects STRING parameter (ends with 's' = string)
+  → load() expects FILE OBJECT parameter (no 's' = file)
+  → qasm2.loads("OPENQASM...") ✓ correct
+  → qasm2.load("OPENQASM...") ✗ wrong (expects file object)
+□ TRAP: Confusing dumps() with dump()
+  → dumps() returns STRING (ends with 's' = string output)
+  → dump() writes to FILE OBJECT (no 's' = file output)
+  → qasm_str = qasm2.dumps(qc) ✓ correct
+  → qasm_str = qasm2.dump(qc, file) ✗ wrong (returns None)
+□ TRAP: Passing filename string to load()
+  → qasm2.load('circuit.qasm') is WRONG
+  → load() needs file object: with open('circuit.qasm') as f: qasm2.load(f)
+  → Only from_qasm_file() accepts filepath string directly
+□ TRAP: Expecting dump() to return string
+  → dump() returns None, writes to file as side effect
+  → qasm_str = qasm2.dump(qc, file) gives None, not string
+  → Use dumps() if you need string return value
+
+VERSION CONFUSION TRAPS
+□ TRAP: Expecting qc.qasm() to return QASM 3.0
+  → qc.qasm() ALWAYS returns QASM 2.0 (never 3.0)
+  → Use qasm3.dumps(qc) for QASM 3.0 export
+  → qc.qasm() has NO version parameter
+□ TRAP: Mixing QASM 2.0 and 3.0 syntax
+  → qelib1.inc is QASM 2.0, stdgates.inc is QASM 3.0
+  → Don't mix includes across versions
+  → Parser will error on version mismatch
+□ TRAP: Using arrow syntax in QASM 3.0
+  → measure q -> c; is QASM 2.0 (arrow syntax)
+  → c = measure q; is QASM 3.0 (assignment syntax)
+  → Using wrong syntax causes parse error
+□ TRAP: Using QASM 3.0 features in QASM 2.0
+  → if, for, while loops are QASM 3.0 only
+  → real type is QASM 3.0 only
+  → Using these in QASM 2.0 string causes parse error
+□ TRAP: Using incorrect register syntax for version
+  → qreg q[2]; creg c[2]; for QASM 2.0
+  → qubit[2] q; bit[2] c; for QASM 3.0
+  → Mixing syntaxes causes parse error
+□ TRAP: Using from_qasm_str() with QASM 3.0 string
+  → QuantumCircuit.from_qasm_str() ONLY supports QASM 2.0
+  → Use qasm3.loads() for QASM 3.0 strings
+  → Passing QASM 3.0 to from_qasm_str() causes parse error
+
+MODULE VS METHOD TRAPS
+□ TRAP: Treating qasm2/qasm3 as methods
+  → qc.qasm2.dumps() is WRONG (not a method)
+  → Use: qasm2.dumps(qc) (module-level function)
+  → qasm2 is module, not attribute of QuantumCircuit
+□ TRAP: Forgetting to import qasm2/qasm3 modules
+  → from qiskit import qasm2, qasm3 required
+  → NameError if you try to use without importing
+  → qasm2/qasm3 are NOT automatically imported with QuantumCircuit
+□ TRAP: Using qasm2.QuantumCircuit.from_qasm_str()
+  → qasm2 module has NO QuantumCircuit class
+  → Use: QuantumCircuit.from_qasm_str() (from qiskit module)
+  → qasm2 only has load/dump functions
+□ TRAP: Expecting qasm() to be a qasm2 method
+  → qasm() is QuantumCircuit instance method, not qasm2 function
+  → qasm2.qasm(qc) is WRONG
+  → Use qc.qasm() or qasm2.dumps(qc)
+
+PARAMETER ORDER TRAPS
+□ TRAP: Confusing parameter order in dump()
+  → dump(circuit, file) not dump(file, circuit)
+  → qasm2.dump(qc, f) ✓ correct
+  → qasm2.dump(f, qc) ✗ wrong
+  → First parameter is circuit, second is file object
+□ TRAP: Passing file before circuit to dump()
+  → Following open() convention: open(file, mode)
+  → But dump() uses: dump(circuit, file) - circuit first!
+  → Remember: dump what, where (circuit, file)
+□ TRAP: Wrong parameter types to functions
+  → dumps(string) is WRONG - expects QuantumCircuit
+  → loads(QuantumCircuit) is WRONG - expects string
+  → dump(string, file) is WRONG - expects QuantumCircuit
+  → load(string) is WRONG - expects file object
+
+FILE HANDLING TRAPS
+□ TRAP: Not using context manager with dump/load
+  → Always use: with open('file.qasm', 'w') as f: qasm2.dump(qc, f)
+  → Without context manager, file may not close properly
+  → File corruption risk if not closed explicitly
+□ TRAP: Using wrong file mode for load/dump
+  → load() requires read mode: open('file.qasm', 'r')
+  → dump() requires write mode: open('file.qasm', 'w')
+  → Using 'r' for dump() causes write error
+  → Using 'w' for load() truncates file before reading
+□ TRAP: Forgetting to close file after open()
+  → f = open('file.qasm'); qasm2.load(f) without f.close()
+  → Use context manager to auto-close
+  → Open files consume system resources
+□ TRAP: Reading closed file object
+  → f = open('file.qasm', 'r'); f.close(); qasm2.load(f) fails
+  → File must remain open during load() call
+  → Context manager ensures file open during operation
+
+ROUNDTRIP AND FIDELITY TRAPS
+□ TRAP: Assuming perfect roundtrip fidelity
+  → Some circuit features may be lost in QASM export/import
+  → Custom gates, metadata, labels may not survive
+  → qc != qasm2.loads(qc.qasm()) (different objects)
+□ TRAP: Expecting parameter expressions to survive roundtrip
+  → Parameter expressions may be evaluated during export
+  → Symbolic parameters might become numeric values
+  → Test roundtrip with actual circuit, not assumptions
+□ TRAP: Assuming barriers preserved in QASM
+  → Barriers may or may not be exported to QASM
+  → Not all QASM versions support barrier instruction
+  → Check QASM output if barriers are critical
+□ TRAP: Expecting circuit names/labels to survive
+  → Circuit name, label, metadata often lost in QASM
+  → QASM focuses on gate sequence, not metadata
+  → Preserve metadata separately if needed
+
+SYNTAX AND HEADER TRAPS
+□ TRAP: Missing semicolon in QASM statements
+  → All QASM statements end with semicolon
+  → OPENQASM 2.0; requires semicolon
+  → qreg q[2]; requires semicolon
+  → Parse error if semicolon missing
+□ TRAP: Wrong case in QASM header
+  → "OPENQASM 2.0;" is correct (uppercase OPENQASM)
+  → "OpenQASM 2.0;" is WRONG
+  → "openqasm 2.0;" is WRONG
+  → Header is case-sensitive
+□ TRAP: Missing include statement
+  → Include required for standard gates: include "qelib1.inc";
+  → Without include, gate definitions missing
+  → Parser error on undefined gates
+  → QASM 3.0 uses: include "stdgates.inc";
+□ TRAP: Include before OPENQASM header
+  → OPENQASM header MUST be first line
+  → include statement MUST come after header
+  → Violating order causes parse error
+
+CONVERSION AND COMPATIBILITY TRAPS
+□ TRAP: Assuming QASM 3.0 → 2.0 conversion always works
+  → QASM 3.0 has features not in 2.0 (loops, conditionals)
+  → Conversion may fail or lose features
+  → Always test conversion result
+□ TRAP: Expecting automatic version detection
+  → Must explicitly use qasm2 or qasm3 module
+  → No automatic detection - you choose parser
+  → Using wrong parser for version causes error
+□ TRAP: Mixing qelib1.inc with QASM 3.0
+  → qelib1.inc is for QASM 2.0 only
+  → QASM 3.0 uses stdgates.inc
+  → Mixing causes gate definition conflicts
+
+RETURN VALUE TRAPS
+□ TRAP: Expecting qasm() to modify circuit
+  → qasm() returns string, doesn't modify circuit
+  → Circuit unchanged after qasm() call
+  → Pure export function, no side effects
+□ TRAP: Using dump() return value
+  → dump() returns None (not string, not circuit)
+  → result = qasm2.dump(qc, f) gives result = None
+  → dump() writes to file as side effect only
+□ TRAP: Expecting loads() to return string
+  → loads() returns QuantumCircuit object (not string)
+  → If you need string, use dumps() instead
+  → loads is for import (QASM → circuit)
+  → dumps is for export (circuit → QASM)
+
+DEPRECATED API TRAPS
+□ TRAP: Using qc.qasm() for all QASM operations
+  → qc.qasm() is legacy convenience method
+  → Only exports QASM 2.0, limited flexibility
+  → Prefer qasm2.dumps() for clarity
+□ TRAP: Assuming from_qasm_* methods are preferred
+  → from_qasm_str() and from_qasm_file() are legacy
+  → Prefer qasm2.loads() and qasm2.load() for new code
+  → More explicit about version being imported
+□ TRAP: Using deprecated QASM features
+  → Some gates/syntax may be deprecated
+  → Check Qiskit version for supported features
+  → Deprecated features may cause warnings
 ```
 
-## Mnemonic Recall Box
-
+### 🧠 Mnemonic Recall Box
 ```
-┌─────────────────────────────────────────────────┐
-│  "FROM needs NO OBJECT"                         │
-│  → from_qasm_str() is STATIC                    │
-│                                                 │
-│  "s = string, no s = file"                      │
-│  → loads/dumps for strings, load/dump for files │
-│                                                 │
-│  "2 uses Arrow, 3 uses Assign"                  │
-│  → QASM 2.0: measure q -> c                     │
-│  → QASM 3.0: c = measure q                      │
-│                                                 │
-│  "QELIB is TWO, STD is THREE"                   │
-│  → qelib1.inc = QASM 2.0                        │
-│  → stdgates.inc = QASM 3.0                      │
-│                                                 │
-│  "Export: Instance, Import: Static"             │
-│  → qc.qasm() - instance method                  │
-│  → QuantumCircuit.from_qasm_str() - static      │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ SECTION 8 MNEMONICS - MEMORIZE THESE!                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ 📝 "FROM needs NO OBJECT"                                       │
+│    from_qasm_str() and from_qasm_file() are STATIC              │
+│    → QuantumCircuit.from_qasm_str() (class call)                │
+│    → NOT qc.from_qasm_str() (no instance!)                      │
+│    → Think: "FROM the CLASS, not from the instance"             │
+│    → Like calling a factory, not a method                       │
+│                                                                  │
+│ 📄 "s = string, no s = file"                                    │
+│    loads()/dumps() work with strings                            │
+│    load()/dump() work with file objects                         │
+│    → Remember the 's' for string!                               │
+│    → Think: "S is for String, Silent for fileS"                 │
+│    → Visual: loadS (S at end) = String goes in/out              │
+│                                                                  │
+│ ➡️ "2 uses Arrow, 3 uses Assign"                                │
+│    QASM 2.0: measure q -> c; (arrow syntax)                     │
+│    QASM 3.0: c = measure q; (assignment syntax)                 │
+│    → "Arrow is old (2), Assign is new (3)"                      │
+│    → Think: "2 arrows →, 3 equals ==="                          │
+│    → Visual: → points forward (old), = modern programming       │
+│                                                                  │
+│ 📚 "QELIB is TWO, STD is THREE"                                 │
+│    qelib1.inc → QASM 2.0 include file                           │
+│    stdgates.inc → QASM 3.0 include file                         │
+│    → "QE-LIB has 2 words, STD-gates for 3.0"                    │
+│    → Think: "QE is oldeR (2.0), STD is neweR (3.0)"             │
+│    → Count letters: QELIB (5) < STDGATES (8), 2.0 < 3.0         │
+│                                                                  │
+│ 🔄 "Export: Instance, Import: Static"                           │
+│    Export: qc.qasm() - instance method                          │
+│    Import: QuantumCircuit.from_qasm_str() - static              │
+│    → "Give from class, take from instance"                      │
+│    → Think: "Instance Exports, Static Imports"                  │
+│    → E-I (Export-Instance), S-I (Static-Import)                 │
+│                                                                  │
+│ 🔢 "Reg syntax: Old brackets, New types"                        │
+│    QASM 2.0: qreg q[2]; creg c[2]; (reg keyword)                │
+│    QASM 3.0: qubit[2] q; bit[2] c; (type annotation)            │
+│    → "Modern code uses types first"                             │
+│    → Think: "TypeScript style = QASM 3.0"                       │
+│    → qreg = "quiet register" (old), qubit = "quantum bit" (new) │
+│                                                                  │
+│ 🎯 "qasm() is Always 2"                                         │
+│    qc.qasm() ONLY exports QASM 2.0                              │
+│    → Use qasm3.dumps(qc) for version 3.0                        │
+│    → Think: "qasm() has no version number = defaults to 2.0"    │
+│    → Remember: "Legacy method = legacy version (2.0)"           │
+│                                                                  │
+│ 📦 "dump WHAT, WHERE"                                           │
+│    dump(circuit, file) - circuit first, file second             │
+│    → NOT dump(file, circuit) - wrong order!                     │
+│    → Think: "dump WHAT (circuit), WHERE (file)"                 │
+│    → Analogy: "pour WHAT (water), WHERE (glass)"                │
+│    → Different from open(WHERE, mode) - don't confuse!          │
+│                                                                  │
+│ 🔀 "loads IN, dumps OUT"                                        │
+│    loads() brings data IN (string → circuit)                    │
+│    dumps() sends data OUT (circuit → string)                    │
+│    → Think: "LOAD the car (bring in), DUMP the trash (out)"     │
+│    → loads = loading data INTO Python                           │
+│    → dumps = dumping data OUT OF Python                         │
+│                                                                  │
+│ 🚫 "dump returns NADA"                                          │
+│    dump() returns None (writes to file as side effect)          │
+│    dumps() returns string (useful return value)                 │
+│    → Think: "dump = no return (void), dumps = string return"    │
+│    → dump() is like print() - does action, no return            │
+│    → dumps() is like str() - returns value                      │
+│                                                                  │
+│ 🔁 "Module comes FIRST, not LAST"                               │
+│    qasm2.dumps(qc) ✓ correct (module.function(object))          │
+│    qc.qasm2.dumps() ✗ wrong (not a method chain)                │
+│    → Think: "Tool before Object (qasm2 before qc)"              │
+│    → Like: json.dumps(data) not data.json.dumps()               │
+│    → qasm2 is a TOOL you use ON circuits                        │
+│                                                                  │
+│ 📥 "IMPORT the modules, EXPORT is FREE"                         │
+│    Must import: from qiskit import qasm2, qasm3                 │
+│    Already have: qc.qasm() (no import needed)                   │
+│    → Think: "Legacy methods free, new modules cost import"      │
+│    → qasm2/qasm3 NOT auto-imported with QuantumCircuit          │
+│    → Explicit is better than implicit (Python Zen)              │
+│                                                                  │
+│ 🎭 "QASM 3 = Python-like"                                       │
+│    QASM 3.0 has if, for, variables (like Python)                │
+│    QASM 2.0 is simpler, gate-only language                      │
+│    → Think: "3.0 = programming language, 2.0 = gate list"       │
+│    → QASM 3.0: bit[5] c; (Python: c: list[int])                 │
+│    → QASM 3.0: c = measure q; (Python assignment style)         │
+│                                                                  │
+│ 🔤 "OPENQASM SCREAMS"                                           │
+│    Header must be uppercase: OPENQASM (not OpenQASM)            │
+│    → Think: "QASM announces itself LOUDLY"                      │
+│    → OPENQASM 2.0; - all caps for OPENQASM                      │
+│    → Case-sensitive: OpenQASM causes parse error                │
+│                                                                  │
+│ 📍 "Header is FIRST, always FIRST"                              │
+│    OPENQASM header must be line 1 of file                       │
+│    Include comes after header, never before                     │
+│    → Think: "Introduce yourself (OPENQASM) before talking"      │
+│    → Like #include in C - header first, then includes           │
+│                                                                  │
+│ 🎪 "from_qasm_file takes PATH, load takes FILE"                 │
+│    from_qasm_file('circuit.qasm') - string filepath             │
+│    load(file_object) - open file object                         │
+│    → Think: "Legacy (from_qasm_file) is EASY - just path"       │
+│    → Modern (load) needs FILE OBJECT - more control             │
+│    → from_qasm_file = convenience, load = explicit              │
+│                                                                  │
+│ 🧮 "Parameter Expression may DIE in export"                     │
+│    Symbolic parameters (θ, φ) may become numbers in QASM        │
+│    → Think: "QASM evaluates math, loses symbols"                │
+│    → Circuit with Parameter(θ) → QASM with 1.5708 (π/2)         │
+│    → Roundtrip may lose parameterization                        │
+│                                                                  │
+│ 🎯 "Semicolon ALWAYS ends the line"                             │
+│    Every QASM statement ends with semicolon                     │
+│    → Think: "QASM is formal, like old languages (C, Java)"      │
+│    → OPENQASM 2.0; - semicolon required                         │
+│    → qreg q[2]; - semicolon required                            │
+│    → measure q[0] -> c[0]; - semicolon required                 │
+│                                                                  │
+│ 🔄 "Roundtrip loses METADATA"                                   │
+│    Circuit name, labels, custom metadata lost in QASM           │
+│    → Think: "QASM is minimal - just gates and measurements"     │
+│    → Like copying sheet music - notes survive, notes don't      │
+│    → Save metadata separately if important                      │
+│                                                                  │
+│ 🌐 "Context Manager for FILE safety"                            │
+│    Always: with open('file', 'w') as f: qasm2.dump(qc, f)       │
+│    → Think: "WITH is SAFE, without is RISKY"                    │
+│    → Context manager auto-closes file (no leaks)                │
+│    → Protects against corruption if error occurs                │
+│                                                                  │
+│ 🔀 "Version in HEADER, not in function"                         │
+│    Version determined by OPENQASM 2.0/3.0 in file               │
+│    Not by which function you use (qasm2 vs qasm3)               │
+│    → Think: "File declares version, you choose parser"          │
+│    → qasm2.loads() can't parse QASM 3.0 file (version error)    │
+│    → Parser and file version must match                         │
+│                                                                  │
+│ 🎨 "Legacy is EASY, Modern is CLEAR"                            │
+│    Legacy: qc.qasm() - short and convenient                     │
+│    Modern: qasm2.dumps(qc) - explicit and clear                 │
+│    → Think: "Easy for quick use, clear for production"          │
+│    → Legacy = less typing, Modern = less confusion              │
+│    → Both work, modern is preferred for new code                │
+│                                                                  │
+│ 🔍 "Parser ERRORS are your friend"                              │
+│    Wrong syntax → parse error → tells you what's wrong          │
+│    → Think: "Error messages guide you to correct version"       │
+│    → Arrow in QASM 3.0 → error points to line                   │
+│    → Read error carefully - it's teaching you                   │
+│                                                                  │
+│ 📊 "Conversion ONE-WAY risky"                                   │
+│    QASM 2.0 → 3.0: usually safe (3.0 is superset)               │
+│    QASM 3.0 → 2.0: may fail (2.0 lacks features)                │
+│    → Think: "Upgrade easy, downgrade hard"                      │
+│    → Like Python 2 → 3 (one way is easier)                      │
+│    → Test conversions - don't assume they work                  │
+│                                                                  │
+│ 🎪 "Include DEFINES gates"                                      │
+│    Without include, gates are UNDEFINED                         │
+│    include "qelib1.inc"; (2.0) or "stdgates.inc"; (3.0)         │
+│    → Think: "Include is gate LIBRARY import"                    │
+│    → Like: from qiskit import gates (conceptually)              │
+│    → Standard gates need standard library                       │
+│                                                                  │
+│ 🔐 "File mode: w for WRITE, r for READ"                         │
+│    dump() needs 'w' mode - writing to file                      │
+│    load() needs 'r' mode - reading from file                    │
+│    → Think: "dump = w (write), load = r (read)"                 │
+│    → Wrong mode causes I/O error                                │
+│    → 'w' truncates file, 'r' reads existing                     │
+│                                                                  │
+│ 🎯 "Index from ZERO like Python"                                │
+│    Qubits/bits indexed from 0: q[0], q[1], q[2]                 │
+│    → Think: "QASM follows Python indexing"                      │
+│    → qreg q[3]; gives q[0], q[1], q[2] (not q[1], q[2], q[3])   │
+│    → Zero-based indexing universal in both versions             │
+│                                                                  │
+│ 🔄 "Barrier MAY or MAY NOT survive"                             │
+│    Barrier gates might be lost in QASM export/import            │
+│    → Think: "Barriers are HINTS, not guarantees"                │
+│    → Check QASM output if barriers critical                     │
+│    → Implementation-dependent behavior                          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## One-Page Summary Box
-
+### 📋 One-Page Summary Box
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                           OPENQASM QUICK REFERENCE                            │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  EXPORT (Circuit → String/File)                                               │
-│  ─────────────────────────────                                               │
-│  QASM 2.0:  qc.qasm()              # Returns string (instance method)        │
-│             qasm2.dumps(qc)        # Returns string (function)               │
-│             qasm2.dump(qc, file)   # Writes to file (function)               │
-│  QASM 3.0:  qasm3.dumps(qc)        # Returns string (function)               │
-│             qasm3.dump(qc, file)   # Writes to file (function)               │
-│                                                                               │
-│  IMPORT (String/File → Circuit)                                               │
-│  ─────────────────────────────────                                           │
-│  QASM 2.0:  QuantumCircuit.from_qasm_str(s)   # STATIC! Class method         │
-│             QuantumCircuit.from_qasm_file(f)  # STATIC! Class method         │
-│             qasm2.loads(s)                    # Function                     │
-│             qasm2.load(file)                  # Function                     │
-│  QASM 3.0:  qasm3.loads(s)                    # Function                     │
-│             qasm3.load(file)                  # Function                     │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  VERSION DIFFERENCES                                                          │
-│  ───────────────────                                                         │
-│  Feature         │ QASM 2.0          │ QASM 3.0                              │
-│  ────────────────┼───────────────────┼───────────────────────────────────────│
-│  Header          │ OPENQASM 2.0;     │ OPENQASM 3.0;                         │
-│  Include         │ qelib1.inc        │ stdgates.inc                          │
-│  Qubit reg       │ qreg q[2];        │ qubit[2] q;                           │
-│  Classical reg   │ creg c[2];        │ bit[2] c;                             │
-│  Measurement     │ measure q -> c;   │ c = measure q;                        │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  ⚠️  #1 EXAM TRAP: from_qasm_str() is STATIC - NO INSTANCE!                   │
-│  ❌ qc.from_qasm_str(s)              # WRONG - instance call                  │
-│  ✅ QuantumCircuit.from_qasm_str(s)  # CORRECT - class call                   │
-└──────────────────────────────────────────────────────────────────────────────┘
+╔═══════════════════════════════════════════════════════════════════════╗
+║         SECTION 8: OPENQASM - ONE-PAGE SUMMARY                        ║
+║                      (6% of Exam - ~4 Questions)                       ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║                                                                        ║
+║  📤 EXPORT (Circuit → String/File)                                     ║
+║  ├─ STRING EXPORT                                                      ║
+║  │  ├─ QASM 2.0: qc.qasm() [instance method, returns str]             ║
+║  │  ├─ QASM 2.0: qasm2.dumps(qc) [function, returns str]              ║
+║  │  └─ QASM 3.0: qasm3.dumps(qc) [function, returns str]              ║
+║  ├─ FILE EXPORT                                                        ║
+║  │  ├─ QASM 2.0: qasm2.dump(qc, file_obj) [returns None]              ║
+║  │  └─ QASM 3.0: qasm3.dump(qc, file_obj) [returns None]              ║
+║  ├─ KEY POINTS                                                         ║
+║  │  ├─ qc.qasm() is LEGACY, QASM 2.0 ONLY                             ║
+║  │  ├─ dumps() has 's' → returns String                               ║
+║  │  ├─ dump() no 's' → writes to File, returns None                   ║
+║  │  └─ dump() parameter order: dump(circuit, file) NOT (file, circuit)║
+║                                                                        ║
+║  📥 IMPORT (String/File → Circuit)                                     ║
+║  ├─ STRING IMPORT                                                      ║
+║  │  ├─ QASM 2.0 Legacy: QuantumCircuit.from_qasm_str(s) [STATIC!]     ║
+║  │  ├─ QASM 2.0 Modern: qasm2.loads(string) [returns QuantumCircuit]  ║
+║  │  └─ QASM 3.0: qasm3.loads(string) [returns QuantumCircuit]         ║
+║  ├─ FILE IMPORT                                                        ║
+║  │  ├─ QASM 2.0 Legacy: QuantumCircuit.from_qasm_file(path) [STATIC!] ║
+║  │  │                    Takes filepath STRING                         ║
+║  │  ├─ QASM 2.0 Modern: qasm2.load(file_obj) [returns QuantumCircuit] ║
+║  │  └─ QASM 3.0: qasm3.load(file_obj) [returns QuantumCircuit]        ║
+║  ├─ KEY POINTS                                                         ║
+║  │  ├─ from_qasm_* are STATIC methods (call on CLASS, not instance!)  ║
+║  │  ├─ from_qasm_* ONLY support QASM 2.0                              ║
+║  │  ├─ loads() has 's' → takes String parameter                       ║
+║  │  ├─ load() no 's' → takes File object parameter                    ║
+║  │  ├─ from_qasm_file() takes filepath STRING (auto opens/closes)     ║
+║  │  └─ load() takes FILE OBJECT (use with context manager)            ║
+║                                                                        ║
+║  📦 REQUIRED IMPORTS                                                   ║
+║  ├─ from qiskit import QuantumCircuit  [for from_qasm_*]              ║
+║  ├─ from qiskit import qasm2           [for qasm2.loads/dumps/etc]    ║
+║  ├─ from qiskit import qasm3           [for qasm3.loads/dumps/etc]    ║
+║  └─ NOTE: qc.qasm() needs NO import (instance method)                 ║
+║                                                                        ║
+║  📊 VERSION COMPARISON TABLE                                           ║
+║  ┌──────────────────┬─────────────────────┬────────────────────────┐  ║
+║  │ Feature          │ QASM 2.0            │ QASM 3.0               │  ║
+║  ├──────────────────┼─────────────────────┼────────────────────────┤  ║
+║  │ Header           │ OPENQASM 2.0;       │ OPENQASM 3.0;          │  ║
+║  │ Include file     │ qelib1.inc          │ stdgates.inc           │  ║
+║  │ Qubit register   │ qreg q[2];          │ qubit[2] q;            │  ║
+║  │ Classical reg    │ creg c[2];          │ bit[2] c;              │  ║
+║  │ Measurement      │ measure q -> c;     │ c = measure q;         │  ║
+║  │ Gate syntax      │ h q[0];             │ h q[0]; (same)         │  ║
+║  │ Conditionals     │ ✗ Not supported     │ ✓ if (c==1) { ... }    │  ║
+║  │ Loops            │ ✗ Not supported     │ ✓ for i in [0:5] {...} │  ║
+║  │ Expressions      │ ✗ Limited           │ ✓ angle = pi/4 + x;    │  ║
+║  │ Real type        │ ✗ Not supported     │ ✓ real theta;          │  ║
+║  └──────────────────┴─────────────────────┴────────────────────────┘  ║
+║                                                                        ║
+║  🔄 CONVERSION PATTERNS                                                ║
+║  ├─ QASM 2.0 → 3.0 (usually safe):                                    ║
+║  │  └─ qasm3_str = qasm3.dumps(qasm2.loads(qasm2_str))                ║
+║  ├─ QASM 3.0 → 2.0 (may fail if QASM 3.0 features used):              ║
+║  │  └─ qasm2_str = qasm2.dumps(qasm3.loads(qasm3_str))                ║
+║  ├─ Roundtrip test:                                                    ║
+║  │  └─ qc_new = qasm2.loads(qc.qasm())                                ║
+║  └─ Version equivalence check:                                         ║
+║     └─ assert qc.qasm() == qasm2.dumps(qc)  # Always True             ║
+║                                                                        ║
+║  📁 FILE OPERATION PATTERNS                                            ║
+║  ├─ SAVE QASM 2.0:                                                     ║
+║  │  └─ with open('circuit.qasm', 'w') as f: qasm2.dump(qc, f)         ║
+║  ├─ LOAD QASM 2.0:                                                     ║
+║  │  └─ with open('circuit.qasm', 'r') as f: qc = qasm2.load(f)        ║
+║  ├─ SAVE QASM 3.0:                                                     ║
+║  │  └─ with open('circuit.qasm', 'w') as f: qasm3.dump(qc, f)         ║
+║  ├─ LOAD QASM 3.0:                                                     ║
+║  │  └─ with open('circuit.qasm', 'r') as f: qc = qasm3.load(f)        ║
+║  └─ LEGACY LOAD (QASM 2.0 only):                                      ║
+║     └─ qc = QuantumCircuit.from_qasm_file('circuit.qasm')             ║
+║                                                                        ║
+║  🔑 KEY SYNTAX DIFFERENCES                                             ║
+║  ├─ MEASUREMENT                                                        ║
+║  │  ├─ QASM 2.0: measure q[0] -> c[0];  [arrow: qubit -> classical]   ║
+║  │  └─ QASM 3.0: c[0] = measure q[0];   [assignment: classical = ...]  ║
+║  ├─ REGISTER DECLARATION                                               ║
+║  │  ├─ QASM 2.0: qreg q[5]; creg c[5];  [keyword: qreg/creg]          ║
+║  │  └─ QASM 3.0: qubit[5] q; bit[5] c;  [type annotation: qubit/bit]  ║
+║  ├─ INCLUDE FILES                                                      ║
+║  │  ├─ QASM 2.0: include "qelib1.inc";   [standard gate library]      ║
+║  │  └─ QASM 3.0: include "stdgates.inc"; [standard gates]             ║
+║  ├─ HEADER (ALWAYS FIRST LINE)                                        ║
+║  │  ├─ QASM 2.0: OPENQASM 2.0;  [case-sensitive, uppercase]           ║
+║  │  └─ QASM 3.0: OPENQASM 3.0;  [case-sensitive, uppercase]           ║
+║  └─ ADVANCED FEATURES (QASM 3.0 ONLY)                                 ║
+║     ├─ Conditionals: if (c == 1) { h q[0]; }                          ║
+║     ├─ Loops: for i in [0:4] { rx(pi/4) q[i]; }                       ║
+║     ├─ Variables: real angle = pi/4;                                   ║
+║     └─ Expressions: angle = theta + phi;                              ║
+║                                                                        ║
+║  ⚠️ TOP 15 EXAM TRAPS (MEMORIZE!)                                      ║
+║  ┌────────────────────────────────────────────────────────────────┐   ║
+║  │ STATIC METHOD TRAPS                                            │   ║
+║  │ 1. from_qasm_str() is STATIC                                   │   ║
+║  │    ✗ qc.from_qasm_str(s)                                       │   ║
+║  │    ✓ QuantumCircuit.from_qasm_str(s)                           │   ║
+║  │ 2. from_qasm_file() is STATIC                                  │   ║
+║  │    ✗ qc.from_qasm_file(path)                                   │   ║
+║  │    ✓ QuantumCircuit.from_qasm_file(path)                       │   ║
+║  ├────────────────────────────────────────────────────────────────┤   ║
+║  │ STRING VS FILE TRAPS                                           │   ║
+║  │ 3. loads() takes STRING, load() takes FILE OBJECT              │   ║
+║  │    ✗ qasm2.load("OPENQASM 2.0;...")                            │   ║
+║  │    ✓ qasm2.loads("OPENQASM 2.0;...")                           │   ║
+║  │ 4. dumps() returns STRING, dump() returns NONE                 │   ║
+║  │    ✗ qasm_str = qasm2.dump(qc, file)  # Returns None!          │   ║
+║  │    ✓ qasm_str = qasm2.dumps(qc)       # Returns string         │   ║
+║  │ 5. dump() parameter order: (circuit, file) NOT (file, circuit) │   ║
+║  │    ✗ qasm2.dump(f, qc)                                         │   ║
+║  │    ✓ qasm2.dump(qc, f)                                         │   ║
+║  ├────────────────────────────────────────────────────────────────┤   ║
+║  │ VERSION CONFUSION TRAPS                                        │   ║
+║  │ 6. qc.qasm() ONLY returns QASM 2.0 (never 3.0)                 │   ║
+║  │    ✗ Expecting qc.qasm() to return QASM 3.0                    │   ║
+║  │    ✓ Use qasm3.dumps(qc) for QASM 3.0                          │   ║
+║  │ 7. from_qasm_str() ONLY supports QASM 2.0                      │   ║
+║  │    ✗ QuantumCircuit.from_qasm_str(qasm3_string)                │   ║
+║  │    ✓ qasm3.loads(qasm3_string)                                 │   ║
+║  │ 8. Arrow (2.0) vs Assignment (3.0) measurement syntax          │   ║
+║  │    QASM 2.0: measure q -> c;                                   │   ║
+║  │    QASM 3.0: c = measure q;  (reversed order!)                 │   ║
+║  │ 9. qelib1.inc (2.0) vs stdgates.inc (3.0)                      │   ║
+║  │    ✗ include "stdgates.inc"; in QASM 2.0                       │   ║
+║  │    ✓ include "qelib1.inc"; in QASM 2.0                         │   ║
+║  ├────────────────────────────────────────────────────────────────┤   ║
+║  │ MODULE VS METHOD TRAPS                                         │   ║
+║  │ 10. qasm2/qasm3 are MODULES, not circuit methods               │   ║
+║  │     ✗ qc.qasm2.dumps()                                         │   ║
+║  │     ✓ qasm2.dumps(qc)                                          │   ║
+║  │ 11. Must import qasm2/qasm3 modules                            │   ║
+║  │     ✗ qasm2.dumps(qc)  # Without import                        │   ║
+║  │     ✓ from qiskit import qasm2; qasm2.dumps(qc)                │   ║
+║  ├────────────────────────────────────────────────────────────────┤   ║
+║  │ FILE HANDLING TRAPS                                            │   ║
+║  │ 12. from_qasm_file() takes FILEPATH STRING                     │   ║
+║  │     load() takes FILE OBJECT                                   │   ║
+║  │     ✗ qasm2.load('circuit.qasm')  # Expects file object!       │   ║
+║  │     ✓ with open('circuit.qasm') as f: qasm2.load(f)            │   ║
+║  │ 13. Wrong file mode causes errors                              │   ║
+║  │     dump() needs 'w', load() needs 'r'                         │   ║
+║  │     ✗ open('file.qasm', 'r') with dump()                       │   ║
+║  │     ✓ open('file.qasm', 'w') with dump()                       │   ║
+║  ├────────────────────────────────────────────────────────────────┤   ║
+║  │ SYNTAX TRAPS                                                   │   ║
+║  │ 14. OPENQASM must be UPPERCASE (case-sensitive)                │   ║
+║  │     ✗ OpenQASM 2.0; or openqasm 2.0;                           │   ║
+║  │     ✓ OPENQASM 2.0;                                            │   ║
+║  │ 15. Register syntax differs by version                         │   ║
+║  │     QASM 2.0: qreg q[2]; creg c[2];                            │   ║
+║  │     QASM 3.0: qubit[2] q; bit[2] c;                            │   ║
+║  │     ✗ Mixing syntaxes causes parse error                       │   ║
+║  └────────────────────────────────────────────────────────────────┘   ║
+║                                                                        ║
+║  💡 QUICK REFERENCE CHEATSHEET                                         ║
+║  ├─ Export to string: qc.qasm() or qasm2.dumps(qc) or qasm3.dumps(qc) ║
+║  ├─ Import from string: qasm2.loads(s) or qasm3.loads(s)              ║
+║  ├─ Export to file: qasm2.dump(qc, f) or qasm3.dump(qc, f)            ║
+║  ├─ Import from file: qasm2.load(f) or qasm3.load(f)                  ║
+║  ├─ Remember: 's' = string, no 's' = file                             ║
+║  ├─ Remember: from_qasm_* are STATIC (call on class)                  ║
+║  ├─ Remember: qc.qasm() is QASM 2.0 ONLY                              ║
+║  └─ Remember: dump(circuit, file) order, returns None                 ║
+║                                                                        ║
+╚═══════════════════════════════════════════════════════════════════════╝
 ```
 
 ---

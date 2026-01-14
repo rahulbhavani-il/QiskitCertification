@@ -1550,119 +1550,779 @@ print(f"Most frequent: {state} with probability {prob:.2%}")
 
 ---
 
-## 💡 KEY TAKEAWAYS
+## ✅ Key Takeaways
 
-## Concept Mastery Checklist
-
+### 📚 Concept Checklist
 ```
-□ I understand the result hierarchy: PrimitiveResult → PubResult → DataBin
-□ I know Sampler returns counts (dict), Estimator returns floats
-□ I understand the difference between get_counts(), get_bitstrings(), get_int_counts()
-□ I know len(get_bitstrings()) = shots, len(get_counts()) = unique outcomes
-□ I understand PUB format: Sampler (circuit, params, shots), Estimator (circuit, obs, params, precision)
-□ I know Sampler circuits MUST have measurements
-□ I know Estimator circuits MUST NOT have measurements
-□ I understand multiple circuit result indexing (result[0], result[1], ...)
-□ I know all JobStatus values (INITIALIZING, QUEUED, VALIDATING, RUNNING, CANCELLED, DONE, ERROR)
+CORE CONCEPTS:
+□ Result hierarchy: PrimitiveResult → PubResult → DataBin (3-level structure)
+□ Sampler returns counts (dictionary), Estimator returns expectation values (floats)
+□ get_counts() returns dict with string keys: {'00': 512, '11': 512}
+□ get_bitstrings() returns list of all shot results: ['00', '11', '00', ...]
+□ get_int_counts() returns dict with integer keys: {0: 512, 3: 512}
+□ len(get_bitstrings()) equals shots, len(get_counts()) equals unique outcomes
+□ PUB format for Sampler: (circuit, params, shots) - measurements required
+□ PUB format for Estimator: (circuit, observable, params, precision) - no measurements
+□ Sampler circuits MUST have measurements (qc.measure_all())
+□ Estimator circuits MUST NOT have measurements
+□ Multiple circuits accessed by index: result[0], result[1], result[2]
+□ JobStatus enum values: INITIALIZING, QUEUED, VALIDATING, RUNNING, CANCELLED, DONE, ERROR
+□ BitArray provides multiple access methods for measurement results
+□ DataBin attributes vary by primitive: Sampler has register names, Estimator has evs/stds
+□ result[0].data.evs and result[0].data.stds are properties (not methods!)
+
+RESULT OBJECT TYPES:
+□ PrimitiveResult: Top-level container returned by job.result()
+□ PubResult: Individual result for one PUB (circuit-observable pair)
+□ DataBin: Container for actual data (counts, bitstrings, evs, stds)
+□ BitArray: 2D array structure [shots × num_bits] for measurement outcomes
+□ JobStatus: Enum class representing job lifecycle states
+□ Job: Object representing submitted work, has status() and result() methods
+□ Metadata: Dict-like object containing execution information
+
+DATA ACCESS PATTERNS:
+□ result[i] indexes into PUB results (0-based indexing)
+□ result[i].data accesses DataBin for i-th PUB
+□ result[i].data.register_name accesses BitArray for specific register
+□ BitArray.get_counts() method returns dict of outcome frequencies
+□ BitArray.get_bitstrings() method returns list of all measurement outcomes
+□ BitArray.get_int_counts() method returns dict with integer keys
+□ result[i].metadata accesses execution metadata (shots, circuit_metadata, etc.)
+□ len(result) returns number of PUBs in result
+
+CONSTRAINTS & LIMITATIONS:
+□ PrimitiveResult is list-like but not actually a list (custom container)
+□ Cannot modify result data after retrieval (immutable)
+□ get_counts() preserves shot allocation: sum(counts.values()) == shots
+□ get_bitstrings() always returns list with length equal to shots
+□ get_int_counts() uses binary interpretation with LSB ordering
+□ evs and stds are numpy arrays, even for single observable
+□ Register names must match circuit's classical register names
+□ JobStatus comparisons must use enum values, not strings
+□ job.result() blocks execution until completion (synchronous)
+□ Cancelled jobs cannot retrieve results (raises error)
+□ Error jobs raise exception when calling result()
+
+KEY DEFINITIONS:
+□ Shots: Number of times circuit is executed (repetitions)
+□ Outcome: Specific bitstring result from one shot (e.g., '00', '11')
+□ Unique outcomes: Distinct bitstrings that appeared (keys in get_counts())
+□ Counts: Dictionary mapping outcomes to their frequencies
+□ Bitstrings: Ordered list of all measurement outcomes (one per shot)
+□ Expectation value: ⟨O⟩ = ⟨ψ|O|ψ⟩ (Estimator result)
+□ Standard deviation: Statistical uncertainty in expectation value
+□ PUB (Primitive Unified Bloc): Tuple specifying one circuit execution
+□ Register name: Identifier for classical register (e.g., 'meas', 'c', 'output')
+□ Job ID: Unique identifier for submitted job (string)
+
+JOB LIFECYCLE:
+□ INITIALIZING: Job object created, preparing for submission
+□ QUEUED: Job waiting in queue for available resources
+□ VALIDATING: Backend validating circuit and parameters
+□ RUNNING: Circuit actively executing on quantum hardware
+□ DONE: Execution completed successfully, results available
+□ ERROR: Execution failed, error message available
+□ CANCELLED: User or system cancelled job before completion
+□ Terminal states: DONE, ERROR, CANCELLED (no further transitions)
+□ job.done() returns True for all terminal states
+□ job.in_final_state() checks if job has reached terminal state
+
+BITARRAY SPECIFICS:
+□ BitArray shape: (num_shots, num_bits) - 2D numpy-like array
+□ BitArray is read-only: cannot modify after creation
+□ Slicing supported: bit_array[:, 0] gets first qubit results for all shots
+□ Boolean indexing supported: bit_array[bit_array[:, 0] == 1]
+□ Conversion methods: get_counts(), get_bitstrings(), get_int_counts()
+□ Memory efficient: stores bits compactly, not as strings
+□ Iteration: for bitstring in bit_array.get_bitstrings() iterates outcomes
+
+METADATA CONTENTS:
+□ shots: Actual number of shots executed
+□ circuit_metadata: Information about circuit structure
+□ readout_mitigation_overhead: Time spent on mitigation (if enabled)
+□ num_circuits: Number of circuits in PUB (usually 1)
+□ execution_time: Time spent executing on hardware
+□ Some metadata fields backend-specific (hardware dependent)
+
+VERSION-SPECIFIC:
+□ V2 primitives return PrimitiveResult (consistent interface)
+□ V1 primitives deprecated: different result structure (avoid!)
+□ get_memory() replaced by get_bitstrings() in V2
+□ Result.get_counts() (V1) vs result[0].data.meas.get_counts() (V2)
+□ V2 enforces PUB structure, V1 was more flexible but inconsistent
 ```
 
-## Code Mastery Checklist
-
+### 💻 Code Pattern Checklist
 ```
-□ I can write result[0].data.meas.get_counts() from memory
-□ I can write result[0].data.evs from memory (no parentheses!)
-□ I can write result[0].data.stds from memory
-□ I can iterate through multiple circuit results: for pub in result:
-□ I can access specific circuit: result[i].data.meas.get_counts()
-□ I can create Sampler PUB: [(circuit,)] with trailing comma
-□ I can create Estimator PUB: [(circuit, SparsePauliOp('ZZ'))]
-□ I can check job status: job.status() == JobStatus.DONE
-□ I can filter jobs: service.jobs(pending=False, limit=10)
+ESSENTIAL IMPORTS:
+□ from qiskit.primitives import StatevectorSampler, StatevectorEstimator
+□ from qiskit_ibm_runtime import SamplerV2, EstimatorV2
+□ from qiskit_ibm_runtime import QiskitRuntimeService
+□ from qiskit.providers import JobStatus  # for status comparisons
+□ from qiskit.quantum_info import SparsePauliOp
+□ import numpy as np  # for array operations on results
+
+SAMPLER RESULT EXTRACTION:
+□ result = job.result()  # PrimitiveResult object
+□ counts = result[0].data.meas.get_counts()  # dict: {'00': 512, '11': 512}
+□ bitstrings = result[0].data.meas.get_bitstrings()  # list: ['00', '11', '00', ...]
+□ int_counts = result[0].data.meas.get_int_counts()  # dict: {0: 512, 3: 512}
+□ num_shots = len(bitstrings)  # or sum(counts.values())
+□ unique_outcomes = len(counts)  # number of distinct bitstrings
+□ most_frequent = max(counts, key=counts.get)  # most common outcome
+
+ESTIMATOR RESULT EXTRACTION:
+□ result = job.result()  # PrimitiveResult object
+□ expectation = result[0].data.evs  # numpy array (PROPERTY, no parentheses!)
+□ std_dev = result[0].data.stds  # numpy array (PROPERTY, no parentheses!)
+□ ev_value = result[0].data.evs[0]  # extract first expectation value
+□ std_value = result[0].data.stds[0]  # extract first standard deviation
+□ all_evs = [result[i].data.evs for i in range(len(result))]  # collect all
+
+MULTIPLE PUB RESULTS:
+□ for i, pub_result in enumerate(result):  # iterate all PUBs
+□     counts = pub_result.data.meas.get_counts()
+□ first_result = result[0].data.meas.get_counts()  # first PUB
+□ second_result = result[1].data.meas.get_counts()  # second PUB
+□ num_pubs = len(result)  # total number of PUBs
+□ all_counts = [result[i].data.meas.get_counts() for i in range(len(result))]
+
+CUSTOM REGISTER NAMES:
+□ from qiskit.circuit import ClassicalRegister
+□ cr = ClassicalRegister(2, 'output')  # custom name 'output'
+□ qc.add_register(cr)
+□ qc.measure([0, 1], cr)
+□ counts = result[0].data.output.get_counts()  # use 'output' not 'meas'
+□ register_name = qc.cregs[0].name  # get register name programmatically
+□ bit_array = getattr(result[0].data, register_name)  # dynamic access
+
+JOB STATUS CHECKING:
+□ status = job.status()  # returns JobStatus enum
+□ if job.status() == JobStatus.DONE:  # check if complete
+□     result = job.result()
+□ if job.status() == JobStatus.ERROR:  # check if failed
+□     print(job.error_message())
+□ is_done = job.done()  # boolean, True when in terminal state
+□ job.wait_for_final_state()  # blocking wait for completion
+□ job.wait_for_final_state(timeout=300)  # wait with timeout
+
+JOB MANAGEMENT:
+□ job_id = job.job_id()  # get unique job ID
+□ service = QiskitRuntimeService()
+□ job = service.job(job_id)  # retrieve job by ID
+□ jobs = service.jobs(limit=10)  # get recent jobs
+□ jobs = service.jobs(pending=False)  # get completed jobs only
+□ jobs = service.jobs(program_id='sampler')  # filter by program
+□ job.cancel()  # cancel running job
+□ job.refresh()  # update job status from server
+
+RESULT METADATA ACCESS:
+□ metadata = result[0].metadata  # get metadata dict
+□ actual_shots = metadata['shots']  # actual shots executed
+□ circuit_metadata = metadata.get('circuit_metadata', {})
+□ execution_time = metadata.get('execution_time')
+□ for key, value in metadata.items():  # iterate metadata
+
+BITARRAY OPERATIONS:
+□ bit_array = result[0].data.meas  # get BitArray
+□ shape = bit_array.shape  # (num_shots, num_bits)
+□ num_shots, num_bits = bit_array.shape
+□ first_qubit_results = bit_array[:, 0]  # all shots for qubit 0
+□ first_shot_outcome = bit_array[0, :]  # all qubits for first shot
+□ bitstring = bit_array.get_bitstrings()[0]  # first outcome as string
+
+COUNTS MANIPULATION:
+□ total_shots = sum(counts.values())  # sum all frequencies
+□ probability_00 = counts.get('00', 0) / total_shots  # compute probability
+□ sorted_outcomes = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+□ top_outcome, top_count = max(counts.items(), key=lambda x: x[1])
+□ zero_count = counts.get('00', 0)  # safe access with default
+□ filtered = {k: v for k, v in counts.items() if v > 100}  # filter by count
+
+CONVERSION BETWEEN FORMATS:
+□ int_key = int(string_key, 2)  # convert '11' to 3
+□ string_key = format(int_key, f'0{num_bits}b')  # convert 3 to '11'
+□ counts_from_bitstrings = {}
+□ for bs in bitstrings:
+□     counts_from_bitstrings[bs] = counts_from_bitstrings.get(bs, 0) + 1
+
+MULTIPLE OBSERVABLES (ESTIMATOR):
+□ observables = [SparsePauliOp('ZZ'), SparsePauliOp('XX')]
+□ job = estimator.run([(qc, observables)])
+□ evs = result[0].data.evs  # array: [⟨ZZ⟩, ⟨XX⟩]
+□ stds = result[0].data.stds  # array: [σ_ZZ, σ_XX]
+□ for i, (obs, ev, std) in enumerate(zip(observables, evs, stds)):
+□     print(f"Observable {i}: {ev} ± {std}")
+
+ERROR HANDLING:
+□ try:
+□     result = job.result()
+□ except Exception as e:
+□     print(f"Job failed: {e}")
+□ if job.status() == JobStatus.ERROR:
+□     error_msg = job.error_message()
+□ if not job.done():
+□     print("Job still running...")
+□ assert job.in_final_state(), "Job not completed"
+
+RESULT VALIDATION:
+□ assert len(result) > 0, "No results returned"
+□ assert hasattr(result[0].data, 'meas'), "Missing 'meas' register"
+□ counts = result[0].data.meas.get_counts()
+□ assert sum(counts.values()) == shots, "Shot count mismatch"
+□ assert len(bitstrings) == shots, "Bitstring count mismatch"
+□ assert all(len(bs) == num_bits for bs in bitstrings), "Bitstring length mismatch"
+
+ADVANCED ACCESS PATTERNS:
+□ # Dynamic register access
+□ for reg_name in dir(result[0].data):
+□     if not reg_name.startswith('_'):
+□         bit_array = getattr(result[0].data, reg_name)
+□ # Extract specific bits
+□ first_two_bits = [bs[:2] for bs in bitstrings]
+□ # Marginal counts (project onto subset of qubits)
+□ marginal = {}
+□ for outcome, count in counts.items():
+□     key = outcome[:2]  # first two bits
+□     marginal[key] = marginal.get(key, 0) + count
+
+COMPARISON AND ANALYSIS:
+□ # Compare two results
+□ counts1 = result[0].data.meas.get_counts()
+□ counts2 = result[1].data.meas.get_counts()
+□ difference = {k: counts1.get(k, 0) - counts2.get(k, 0) for k in counts1}
+□ # Statistical analysis
+□ from scipy.stats import chisquare
+□ observed = list(counts.values())
+□ expected = [shots / len(counts)] * len(counts)
+□ chi2, p_value = chisquare(observed, expected)
+
+ITERATING RESULTS:
+□ # By index
+□ for i in range(len(result)):
+□     counts = result[i].data.meas.get_counts()
+□ # By enumeration
+□ for idx, pub_result in enumerate(result):
+□     ev = pub_result.data.evs if hasattr(pub_result.data, 'evs') else None
+□ # Collect all outcomes
+□ all_outcomes = []
+□ for pub in result:
+□     all_outcomes.extend(pub.data.meas.get_bitstrings())
 ```
 
-## Trap Avoidance Checklist
-
+### ⚠️ Exam Trap Checklist
 ```
-□ I won't forget [0] index: result[0].data (not result.data)
-□ I won't forget .data: result[0].data.meas (not result[0].meas)
-□ I won't forget .meas: result[0].data.meas.get_counts() (not result[0].data.get_counts())
-□ I won't forget .get_: get_counts() not counts()
-□ I won't use singular: evs not ev, stds not std
-□ I won't call evs as method: result[0].data.evs not result[0].data.evs()
-□ I won't forget trailing comma: [(circuit,)] not [(circuit)]
-□ I won't use string for observable: SparsePauliOp('ZZ') not 'ZZ'
-□ I won't compare JobStatus with string: == JobStatus.DONE not == "DONE"
+RESULT CHAIN TRAPS:
+□ TRAP: Missing [0] index in result chain
+  → result.data.meas is WRONG (PrimitiveResult not indexed)
+  → Use: result[0].data.meas (must index into PubResult)
+□ TRAP: Missing .data in chain
+  → result[0].meas.get_counts() is WRONG (PubResult has no meas)
+  → Use: result[0].data.meas.get_counts() (data is required!)
+□ TRAP: Missing .meas (or register name) in chain
+  → result[0].data.get_counts() is WRONG (DataBin has no get_counts())
+  → Use: result[0].data.meas.get_counts() (register name required!)
+□ TRAP: Missing .get_ prefix
+  → result[0].data.meas.counts() is WRONG (no such method)
+  → Use: result[0].data.meas.get_counts() (get_ prefix required!)
+□ TRAP: Using wrong register name
+  → Assuming 'meas' when register is named 'c' or 'output'
+  → Check: qc.cregs[0].name to get actual name
+□ TRAP: Calling get_counts on DataBin instead of BitArray
+  → result[0].data.get_counts() doesn't exist
+  → Must go through register: result[0].data.meas.get_counts()
+
+PROPERTY VS METHOD TRAPS:
+□ TRAP: Using singular evs/stds
+  → result[0].data.ev is WRONG (no such attribute)
+  → Use: result[0].data.evs (plural with 's'!)
+□ TRAP: Calling evs/stds as methods
+  → result[0].data.evs() is WRONG (properties, not methods!)
+  → Use: result[0].data.evs (no parentheses!)
+□ TRAP: Using .get_evs() or .get_stds()
+  → No such methods exist
+  → Direct property access: result[0].data.evs
+□ TRAP: Confusing when to use parentheses
+  → get_counts() = method (needs ())
+  → evs = property (no ())
+  → Rule: "get_" prefix = method, otherwise property
+
+PUB FORMAT TRAPS:
+□ TRAP: Missing trailing comma in single-circuit PUB
+  → [(circuit)] is WRONG (list with circuit object, not tuple)
+  → Use: [(circuit,)] (list with tuple - comma makes tuple!)
+□ TRAP: Using list instead of tuple for PUB
+  → [[circuit, params]] is WRONG
+  → Use: [(circuit, params)] (tuple inside list)
+□ TRAP: Forgetting outer list
+  → (circuit,) alone is WRONG
+  → Use: [(circuit,)] (tuple must be in list)
+□ TRAP: Wrong PUB element order
+  → Sampler: (params, circuit, shots) is WRONG
+  → Correct: (circuit, params, shots) - "CPS" order
+
+OBSERVABLE TRAPS:
+□ TRAP: Using string for Estimator observable
+  → estimator.run([(qc, 'ZZ')]) is WRONG
+  → Use: estimator.run([(qc, SparsePauliOp('ZZ'))])
+□ TRAP: Missing observable in Estimator PUB
+  → [(qc,)] is Sampler format, missing observable for Estimator
+  → Use: [(qc, obs)] for Estimator
+□ TRAP: Adding observable to Sampler PUB
+  → [(qc, obs)] is WRONG for Sampler (no observable needed)
+  → Use: [(qc,)] for Sampler
+
+JOB STATUS TRAPS:
+□ TRAP: Comparing JobStatus with string
+  → if job.status() == "DONE" is WRONG
+  → Use: if job.status() == JobStatus.DONE (enum comparison!)
+□ TRAP: Using lowercase status
+  → JobStatus.done is WRONG (wrong case)
+  → Use: JobStatus.DONE (uppercase!)
+□ TRAP: Confusing done() method with DONE status
+  → job.done() returns True for ERROR and CANCELLED too!
+  → Check specific: job.status() == JobStatus.DONE
+□ TRAP: Not handling ERROR status
+  → Assuming done() means success
+  → Check: if job.status() == JobStatus.ERROR before result()
+□ TRAP: Calling result() on cancelled job
+  → Raises exception if job was cancelled
+  → Check status first: if job.status() == JobStatus.DONE
+
+COUNTS VS BITSTRINGS TRAPS:
+□ TRAP: Confusing get_counts() keys (strings) vs get_int_counts() keys (ints)
+  → get_counts() returns {'00': 512}, get_int_counts() returns {0: 512}
+  → Cannot mix: counts['00'] ✓, counts[0] ✗
+□ TRAP: Forgetting that get_bitstrings() length equals shots
+  → len(get_bitstrings()) == shots (one entry per shot)
+  → len(get_counts()) == number of unique outcomes (typically much less)
+□ TRAP: Expecting get_bitstrings() to return set or dict
+  → Returns list: ['00', '11', '00', ...] (order preserved, duplicates included)
+□ TRAP: Assuming counts preserve order
+  → Dict doesn't guarantee order (though Python 3.7+ preserves insertion)
+  → Sort if order matters: sorted(counts.items())
+□ TRAP: Accessing non-existent key in counts
+  → counts['00'] raises KeyError if '00' never occurred
+  → Use: counts.get('00', 0) for safe access with default
+
+TYPE AND CONVERSION TRAPS:
+□ TRAP: Treating bitstrings as integers
+  → '00' is string, not int
+  → Convert: int('00', 2) = 0
+□ TRAP: Wrong binary conversion direction
+  → int('10', 2) = 2 (interprets as MSB)
+  → For LSB ordering, reverse first: int('10'[::-1], 2) = 1
+□ TRAP: Not padding when converting int to bitstring
+  → bin(3) = '0b11', need '011' for 3 qubits
+  → Use: format(3, '03b') or f'{3:03b}'
+□ TRAP: Expecting evs to be scalar when it's array
+  → result[0].data.evs is numpy array, even for single observable
+  → Extract: ev = result[0].data.evs[0]
+□ TRAP: Trying to modify immutable results
+  → Result objects are read-only
+  → Create new dict: modified = dict(counts); modified['00'] += 1
+
+INDEXING TRAPS:
+□ TRAP: Using negative indices expecting Python list behavior
+  → result[-1] may not work as expected (not standard list)
+  → Use: result[len(result)-1] or iterate forward
+□ TRAP: Assuming result[0] always exists
+  → Empty results possible (though rare)
+  → Check: if len(result) > 0 before accessing
+□ TRAP: Out-of-bounds PUB index
+  → result[3] when only 3 PUBs (indices 0,1,2)
+  → Check: i < len(result)
+□ TRAP: Using wrong index for multi-observable results
+  → result[i].data.evs[j] where i=PUB index, j=observable index
+  → Don't confuse the two indices!
+
+METADATA TRAPS:
+□ TRAP: Assuming all metadata fields always present
+  → Some fields are backend-specific or optional
+  → Use: metadata.get('field', default) for safe access
+□ TRAP: Confusing requested shots with actual shots
+  → Request 1024, but metadata['shots'] might differ slightly
+  → Use metadata['shots'] for actual count
+□ TRAP: Treating metadata as regular dict
+  → Some implementations use custom objects
+  → Use .get() method or hasattr() for safety
+
+MULTIPLE PUB TRAPS:
+□ TRAP: Assuming all PUBs have same structure
+  → Different circuits can have different register names
+  → Check each: result[i].data.<register_name>
+□ TRAP: Using same index for circuit and result
+  → If you ran [(qc1,), (qc2,), (qc3,)], result[0] is qc1
+  → But if parameter sweep, indexing differs
+□ TRAP: Forgetting to iterate when multiple PUBs
+  → result[0] only gives first result
+  → Use: for pub in result to process all
+
+V1 VS V2 CONFUSION TRAPS:
+□ TRAP: Using V1 result access patterns
+  → result.get_counts() is V1, doesn't work in V2
+  → V2: result[0].data.meas.get_counts()
+□ TRAP: Using get_memory() (V1 method)
+  → V2 uses get_bitstrings() instead
+□ TRAP: Expecting Result object instead of PrimitiveResult
+  → V1 returned Result, V2 returns PrimitiveResult (different structure)
+□ TRAP: Mixing V1 and V2 code examples
+  → Documentation may show both; ensure using V2 patterns
+
+ESTIMATOR-SPECIFIC TRAPS:
+□ TRAP: Trying to get counts from Estimator result
+  → Estimator has no counts, only evs and stds
+  → Use Sampler if you need counts
+□ TRAP: Expecting measurements in Estimator circuits
+  → Estimator circuits must NOT have measurements
+  → Will error if measurements present
+□ TRAP: Accessing wrong result attributes
+  → result[0].data.meas doesn't exist for Estimator
+  → Use: result[0].data.evs and result[0].data.stds
+
+SAMPLER-SPECIFIC TRAPS:
+□ TRAP: Trying to get expectation values from Sampler
+  → Sampler has no evs, only counts/bitstrings
+  → Use Estimator if you need expectation values
+□ TRAP: Forgetting measurements in Sampler circuits
+  → Sampler requires measurements
+  → Will error if no measurements
+
+ADVANCED TRAPS:
+□ TRAP: Assuming job.result() is cached
+  → Each call may re-fetch from server
+  → Store: result = job.result(), then reuse
+□ TRAP: Not handling job timeout
+  → job.wait_for_final_state() can hang indefinitely
+  → Use: job.wait_for_final_state(timeout=300)
+□ TRAP: Comparing float expectation values with ==
+  → Floating point precision issues
+  → Use: np.isclose(ev1, ev2) or abs(ev1 - ev2) < 1e-6
+□ TRAP: Forgetting shots are statistical samples
+  → Results vary between runs (not deterministic on hardware)
+  → Compare distributions, not exact counts
 ```
 
-## Mnemonic Recall Box
-
+### 🧠 Mnemonic Recall Box
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  "RIDMG" - Result Index Data Meas Get                           │
-│  → result[0].data.meas.get_counts()                             │
+│ SECTION 7 MNEMONICS - MEMORIZE THESE!                          │
+├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  "EVS = Expectation ValueS (plural)"                            │
-│  → result[0].data.evs (property, not method!)                   │
+│ 🔗 "RIDMG" - Result Index Data Meas Get - MOST CRITICAL        │
+│    result[0].data.meas.get_counts()                             │
+│    → R = result (PrimitiveResult)                               │
+│    → I = [0] Index (into PubResult)                             │
+│    → D = .data (DataBin)                                        │
+│    → M = .meas (register name/BitArray)                         │
+│    → G = .get_counts() (method)                                 │
+│    💡 "Really Important Data Means Getting counts"              │
+│    💡 Each step REQUIRED - skip any = AttributeError            │
 │                                                                  │
-│  "CPS" - Circuit, Params, Shots                                 │
-│  → Sampler PUB format                                           │
+│ 📊 "EVS = Expectation ValueS (plural)" - PROPERTY!             │
+│    result[0].data.evs (property, no parentheses!)               │
+│    → Always plural: evs and stds                                │
+│    → Never: ev or std (don't exist!)                            │
+│    💡 "Every Value Stays plural" (evs)                          │
+│    💡 "Standard Deviations Stay plural" (stds)                  │
 │                                                                  │
-│  "COPP" - Circuit, Observable, Params, Precision                │
-│  → Estimator PUB format                                         │
+│ 📦 "CPS" - Circuit, Params, Shots - SAMPLER PUB                │
+│    Sampler PUB format: (circuit, params, shots)                 │
+│    → All after circuit are optional                             │
+│    → Order matters: Circuit first, Params second, Shots third   │
+│    💡 "Car Picks Speed" (circuit picks parameters and shots)    │
 │                                                                  │
-│  "IQVRCDE" - I Queue Very Real Challenges Daily, Expert!        │
-│  → INITIALIZING, QUEUED, VALIDATING, RUNNING, CANCELLED,        │
-│    DONE, ERROR                                                  │
+│ 🎯 "COPP" - Circuit, Observable, Params, Precision - ESTIMATOR │
+│    Estimator PUB format: (circuit, observable, params, prec)    │
+│    → Observable required, others optional                       │
+│    → Order matters: Cannot swap positions!                      │
+│    💡 "Cops Observe People Precisely"                           │
 │                                                                  │
-│  "Trailing comma for tuples"                                    │
-│  → (circuit,) not (circuit)                                     │
+│ 📈 "IQVRCDE" - Job Status Flow                                 │
+│    I = INITIALIZING → Q = QUEUED → V = VALIDATING →            │
+│    R = RUNNING → (C = CANCELLED or D = DONE or E = ERROR)      │
+│    💡 "I Queue Very Real Challenges Daily, Expert!"             │
+│    💡 Last three (C/D/E) are terminal states                    │
+│                                                                  │
+│ 🎯 "Trailing comma makes Tuple" - CRITICAL!                    │
+│    (circuit,) is tuple, (circuit) is just parentheses           │
+│    → [(circuit,)] for PUB format                                │
+│    → Python syntax: comma required for single-element tuple     │
+│    💡 "No comma = no tuple = error"                             │
+│    💡 Test: type((x,)) = tuple, type((x)) = type of x           │
+│                                                                  │
+│ 🔤 "Methods Get, Properties Are" - PARENTHESES RULE            │
+│    get_counts() = method (with parentheses)                     │
+│    evs = property (without parentheses)                         │
+│    → Never call evs() or stds() - they're not methods!          │
+│    💡 "get_" prefix = method (needs ())                         │
+│    💡 No "get_" = property (no ())                              │
+│                                                                  │
+│ 📏 "Bitstrings = Shots, Counts = Unique"                       │
+│    len(get_bitstrings()) = total shots                          │
+│    len(get_counts()) = unique outcomes                          │
+│    → Bitstrings list is longer (one entry per shot)             │
+│    💡 "Bitstrings count all, Counts count unique"               │
+│    💡 1024 shots, 2 unique → len(bitstrings)=1024, len(counts)=2│
+│                                                                  │
+│ 🔢 "String Keys, Int Keys" - get_counts vs get_int_counts      │
+│    get_counts() → {'00': 512, '11': 512} (string keys)          │
+│    get_int_counts() → {0: 512, 3: 512} (integer keys)           │
+│    💡 "Default is String, Int needs explicit method"            │
+│    💡 '00' string ≠ 0 integer (different dict keys!)            │
+│                                                                  │
+│ 🎭 "Enum Not String" - JobStatus Comparison                    │
+│    job.status() == JobStatus.DONE ✓                             │
+│    job.status() == "DONE" ✗                                     │
+│    → Must use enum, not string                                  │
+│    💡 "JobStatus is enum class, not string constant"            │
+│                                                                  │
+│ 📍 "Index Then Data" - Two-Step Access                         │
+│    result → result[0] → result[0].data                          │
+│    → Cannot skip [0]: result.data doesn't exist                 │
+│    💡 "Index into PubResults before accessing data"             │
+│    💡 "result[i]" where i = PUB number (0-based)                │
+│                                                                  │
+│ 🎪 "Register Name Varies" - Don't Assume "meas"                │
+│    result[0].data.meas ← default name                           │
+│    result[0].data.c ← if register named 'c'                     │
+│    result[0].data.output ← if register named 'output'           │
+│    💡 Check: qc.cregs[0].name to get actual name                │
+│                                                                  │
+│ 🔄 "Three-Level Hierarchy" - Result Structure                  │
+│    Level 1: PrimitiveResult (from job.result())                 │
+│    Level 2: PubResult (result[i] for i-th PUB)                  │
+│    Level 3: DataBin (result[i].data)                            │
+│    💡 "Primitive → Pub → Data" (PPD)                            │
+│    💡 Each level must be traversed explicitly                   │
+│                                                                  │
+│ 🎲 "Sampler Counts, Estimator Expects" - Output Types          │
+│    Sampler → counts/bitstrings (discrete)                       │
+│    Estimator → expectation values (continuous)                  │
+│    💡 "Sampler Samples, Estimator Estimates"                    │
+│    💡 Different data attributes: meas vs evs/stds               │
+│                                                                  │
+│ 🔑 "done() Means Terminal, Not Success" - Status Check         │
+│    job.done() returns True for DONE, ERROR, CANCELLED           │
+│    → Doesn't mean success, just "finished"                      │
+│    💡 "done() = terminal state, not necessarily DONE status"    │
+│    💡 Check: job.status() == JobStatus.DONE for success         │
+│                                                                  │
+│ 🧮 "Sum Counts = Shots" - Validation Check                     │
+│    sum(counts.values()) should equal total shots                │
+│    → Sanity check for data integrity                            │
+│    💡 "All shots accounted for in counts"                       │
+│                                                                  │
+│ 📐 "BitArray is 2D" - Shape Understanding                       │
+│    BitArray.shape = (num_shots, num_bits)                       │
+│    → First dimension: shots, Second dimension: qubits           │
+│    💡 "Array of shots, each shot has bits"                      │
+│                                                                  │
+│ 🔍 "Metadata Has Actual Shots" - True Count                    │
+│    result[0].metadata['shots'] = actual shots executed          │
+│    → May differ slightly from requested                         │
+│    💡 "Metadata tells truth about execution"                    │
+│                                                                  │
+│ 🎯 "V2 Has Three Levels, V1 Had One" - Version Difference      │
+│    V2: result[0].data.meas.get_counts() (three levels)          │
+│    V1: result.get_counts() (direct access)                      │
+│    💡 "V2 more structured, V1 simpler but deprecated"           │
+│                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## One-Page Summary Box
-
+### 📋 One-Page Summary Box
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                        RESULT EXTRACTION QUICK REFERENCE                      │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  SAMPLER RESULTS (95% of exam questions)                                      │
-│  ───────────────────────────────────────                                     │
-│  counts = result[0].data.meas.get_counts()     # {'00': 512, '11': 512}      │
-│  bitstrings = result[0].data.meas.get_bitstrings()  # ['00', '11', ...]      │
-│  int_counts = result[0].data.meas.get_int_counts()  # {0: 512, 3: 512}       │
-│                                                                               │
-│  ESTIMATOR RESULTS                                                            │
-│  ─────────────────                                                           │
-│  expectation = result[0].data.evs    # float - NO PARENTHESES!               │
-│  std_dev = result[0].data.stds       # float - NO PARENTHESES!               │
-│                                                                               │
-│  PUB FORMATS                                                                  │
-│  ───────────                                                                 │
-│  Sampler:   sampler.run([(circuit,)])                   # CPS                │
-│             sampler.run([(circuit, params, shots)])                          │
-│                                                                               │
-│  Estimator: estimator.run([(circuit, SparsePauliOp('ZZ'))])  # COPP          │
-│             estimator.run([(circuit, obs, params, precision)])               │
-│                                                                               │
-│  MULTIPLE CIRCUITS                                                            │
-│  ─────────────────                                                           │
-│  result[0].data.meas.get_counts()   # First circuit                          │
-│  result[1].data.meas.get_counts()   # Second circuit                         │
-│  for i, pub in enumerate(result):   # Iterate all                            │
-│      counts = pub.data.meas.get_counts()                                     │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  ⚠️ TOP EXAM TRAPS                                                            │
-│  ──────────────────                                                          │
-│  ❌ result.data.meas.get_counts()    # Missing [0]                            │
-│  ❌ result[0].meas.get_counts()      # Missing .data                          │
-│  ❌ result[0].data.get_counts()      # Missing .meas                          │
-│  ❌ result[0].data.meas.counts()     # Missing .get_                          │
-│  ❌ result[0].data.ev                # Missing 's' → use evs                  │
-│  ❌ result[0].data.evs()             # Property not method!                   │
-│  ❌ [(circuit)]                      # Missing comma → [(circuit,)]           │
-│  ✅ result[0].data.meas.get_counts() # CORRECT                                │
-│  ✅ result[0].data.evs               # CORRECT                                │
-└──────────────────────────────────────────────────────────────────────────────┘
+╔═══════════════════════════════════════════════════════════════════════╗
+║         SECTION 7: RESULTS - ONE-PAGE SUMMARY                         ║
+║                      (10% of Exam - ~6-7 Questions)                    ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║                                                                        ║
+║  🎯 RESULT HIERARCHY (95% of questions!) - MEMORIZE THIS!             ║
+║  ├─ Three-Level Structure:                                             ║
+║  │   ├─ Level 1: PrimitiveResult (job.result())                       ║
+║  │   │   └─ Container for all PUB results                             ║
+║  │   ├─ Level 2: PubResult (result[0], result[1], ...)                ║
+║  │   │   └─ Individual result for each PUB (circuit execution)        ║
+║  │   └─ Level 3: DataBin (result[0].data)                             ║
+║  │       ├─ Sampler: BitArrays by register name (.meas, .c, etc.)     ║
+║  │       └─ Estimator: Properties .evs and .stds                      ║
+║  ├─ Access Pattern: result[index].data.attribute                      ║
+║  │   └─ MUST traverse all levels - cannot skip any                    ║
+║  └─ Key: Each level has specific methods/attributes                   ║
+║                                                                        ║
+║  📊 SAMPLER RESULTS (Discrete Outcomes)                                ║
+║  ├─ Full extraction chain:                                             ║
+║  │   └─ counts = result[0].data.meas.get_counts()                     ║
+║  │       ├─ result = PrimitiveResult object                           ║
+║  │       ├─ [0] = index into first PubResult                          ║
+║  │       ├─ .data = DataBin container                                 ║
+║  │       ├─ .meas = BitArray for 'meas' register                      ║
+║  │       └─ .get_counts() = method returning dict                     ║
+║  ├─ Three extraction methods:                                          ║
+║  │   ├─ get_counts() → {'00': 512, '11': 512} (string keys)           ║
+║  │   │   └─ Returns: dict mapping bitstrings to frequencies           ║
+║  │   ├─ get_bitstrings() → ['00', '11', '00', ...] (list)             ║
+║  │   │   └─ Returns: list of all outcomes, length = shots             ║
+║  │   └─ get_int_counts() → {0: 512, 3: 512} (integer keys)            ║
+║  │       └─ Returns: dict with binary-to-int converted keys           ║
+║  ├─ Length relationships (CRITICAL!):                                  ║
+║  │   ├─ len(get_bitstrings()) = total shots (e.g., 1024)              ║
+║  │   ├─ len(get_counts()) = unique outcomes (e.g., 2)                 ║
+║  │   └─ sum(counts.values()) = total shots (validation check)         ║
+║  └─ Register name variations:                                          ║
+║      ├─ Default: result[0].data.meas (measure_all() creates 'meas')   ║
+║      ├─ Custom: result[0].data.output (if register named 'output')    ║
+║      └─ Check: qc.cregs[0].name to get actual register name           ║
+║                                                                        ║
+║  🎯 ESTIMATOR RESULTS (Continuous Expectation Values)                  ║
+║  ├─ Access pattern (PROPERTIES, not methods!):                         ║
+║  │   ├─ expectation = result[0].data.evs  (NO parentheses!)           ║
+║  │   ├─ std_dev = result[0].data.stds     (NO parentheses!)           ║
+║  │   └─ Both are numpy arrays, even for single observable             ║
+║  ├─ Extract single values:                                             ║
+║  │   ├─ ev_value = result[0].data.evs[0]   # first expectation        ║
+║  │   └─ std_value = result[0].data.stds[0] # first std dev            ║
+║  ├─ Multiple observables:                                              ║
+║  │   ├─ evs = result[0].data.evs  # array: [⟨O₁⟩, ⟨O₂⟩, ⟨O₃⟩]         ║
+║  │   └─ stds = result[0].data.stds  # array: [σ₁, σ₂, σ₃]             ║
+║  └─ CRITICAL: Always plural (evs, stds), never singular (ev, std)     ║
+║                                                                        ║
+║  📦 PUB FORMATS (Primitive Unified Bloc)                               ║
+║  ├─ Sampler PUB: (circuit, parameters, shots)                         ║
+║  │   ├─ Mnemonic: "CPS" - Circuit, Params, Shots                      ║
+║  │   ├─ Basic:        [(circuit,)]              # trailing comma!     ║
+║  │   ├─ With params:  [(circuit, [0.5, 1.2])]  # parameter values    ║
+║  │   ├─ With shots:   [(circuit, None, 2048)]  # None placeholder    ║
+║  │   └─ Full:         [(circuit, [0.5], 2048)] # all specified       ║
+║  ├─ Estimator PUB: (circuit, observable, parameters, precision)       ║
+║  │   ├─ Mnemonic: "COPP" - Circuit, Observable, Params, Precision    ║
+║  │   ├─ Basic:        [(circuit, obs)]                                ║
+║  │   ├─ With params:  [(circuit, obs, [0.5, 1.2])]                   ║
+║  │   ├─ With precision: [(circuit, obs, None, 0.01)]                  ║
+║  │   └─ Full:         [(circuit, obs, [0.5], 0.01)]                  ║
+║  └─ CRITICAL: Tuple inside list - comma required for single element   ║
+║      └─ [(circuit,)] NOT [(circuit)] - comma makes it tuple!          ║
+║                                                                        ║
+║  🔄 MULTIPLE CIRCUITS/PUBS                                             ║
+║  ├─ Indexing pattern:                                                  ║
+║  │   ├─ result[0] → first PUB/circuit                                 ║
+║  │   ├─ result[1] → second PUB/circuit                                ║
+║  │   └─ result[i] → i-th PUB/circuit (0-based)                        ║
+║  ├─ Iteration patterns:                                                ║
+║  │   ├─ for i in range(len(result)):                                  ║
+║  │   │       counts = result[i].data.meas.get_counts()                ║
+║  │   ├─ for pub_result in result:                                     ║
+║  │   │       counts = pub_result.data.meas.get_counts()               ║
+║  │   └─ all_counts = [r.data.meas.get_counts() for r in result]       ║
+║  └─ Number of results: len(result) = number of PUBs submitted         ║
+║                                                                        ║
+║  📈 JOB STATUS MANAGEMENT                                              ║
+║  ├─ Status checking:                                                   ║
+║  │   ├─ status = job.status()  # returns JobStatus enum               ║
+║  │   ├─ is_done = job.done()   # returns boolean (True when terminal) ║
+║  │   └─ job.wait_for_final_state()  # blocking wait                   ║
+║  ├─ Status lifecycle (in order):                                       ║
+║  │   ├─ INITIALIZING → Job object created                             ║
+║  │   ├─ QUEUED → Waiting for resources                                ║
+║  │   ├─ VALIDATING → Backend checking circuit                         ║
+║  │   ├─ RUNNING → Actively executing                                  ║
+║  │   └─ Terminal states (one of):                                     ║
+║  │       ├─ DONE → Success, results available                         ║
+║  │       ├─ ERROR → Failed, check error_message()                     ║
+║  │       └─ CANCELLED → User/system cancelled                         ║
+║  ├─ Comparison pattern:                                                ║
+║  │   ├─ if job.status() == JobStatus.DONE:  # use enum!               ║
+║  │   ├─ NOT: if job.status() == "DONE"  # wrong! (string)             ║
+║  │   └─ Import: from qiskit.providers import JobStatus                ║
+║  └─ CRITICAL: done() returns True for ERROR and CANCELLED too!        ║
+║      └─ Check specific status for success: status() == JobStatus.DONE ║
+║                                                                        ║
+║  🔢 DATA TYPE CONVERSIONS                                              ║
+║  ├─ String to integer:                                                 ║
+║  │   ├─ int('00', 2) = 0  # binary string to int                      ║
+║  │   └─ int('11', 2) = 3  # interprets as binary                      ║
+║  ├─ Integer to string:                                                 ║
+║  │   ├─ format(0, '02b') = '00'  # with padding                       ║
+║  │   ├─ f'{3:02b}' = '11'  # f-string format                          ║
+║  │   └─ bin(3) = '0b11'  # without padding (avoid for Qiskit)         ║
+║  ├─ Bitstring ordering (LSB):                                          ║
+║  │   ├─ '01' means q[0]=1, q[1]=0 (rightmost = qubit 0)               ║
+║  │   └─ For standard binary: may need to reverse string               ║
+║  └─ Array extraction:                                                  ║
+║      ├─ evs is array: extract with evs[0], evs[1], etc.               ║
+║      └─ counts is dict: extract with counts['00'], counts.get('11', 0)║
+║                                                                        ║
+║  🔍 METADATA ACCESS                                                    ║
+║  ├─ Access pattern:                                                    ║
+║  │   └─ metadata = result[0].metadata  # dict-like object             ║
+║  ├─ Common fields:                                                     ║
+║  │   ├─ metadata['shots'] → actual shots executed                     ║
+║  │   ├─ metadata.get('circuit_metadata', {}) → circuit info           ║
+║  │   └─ metadata.get('execution_time') → time spent                   ║
+║  └─ Safe access: use .get() method for optional fields                ║
+║                                                                        ║
+║  ⚠️ TOP 15 EXAM TRAPS (HIGHEST PRIORITY!)                              ║
+║  ╔════════════════════════════════════════════════════════════════╗  ║
+║  ║ 1. ❌ Missing [0]: result.data.meas (skipping PubResult index)  ║  ║
+║  ║    ✓ CORRECT: result[0].data.meas (must index first!)          ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 2. ❌ Missing .data: result[0].meas (skipping DataBin)          ║  ║
+║  ║    ✓ CORRECT: result[0].data.meas (data is required!)          ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 3. ❌ Missing register: result[0].data.get_counts()             ║  ║
+║  ║    ✓ CORRECT: result[0].data.meas.get_counts() (register name!)║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 4. ❌ Missing .get_: result[0].data.meas.counts()               ║  ║
+║  ║    ✓ CORRECT: result[0].data.meas.get_counts() (get_ prefix!)  ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 5. ❌ Singular: result[0].data.ev (no such attribute!)          ║  ║
+║  ║    ✓ CORRECT: result[0].data.evs (always plural with s!)       ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 6. ❌ Calling property as method: result[0].data.evs()          ║  ║
+║  ║    ✓ CORRECT: result[0].data.evs (NO parentheses - property!)  ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 7. ❌ Missing comma: [(circuit)] - not a tuple!                 ║  ║
+║  ║    ✓ CORRECT: [(circuit,)] - comma makes single-element tuple  ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 8. ❌ String observable: estimator.run([(qc, 'ZZ')])            ║  ║
+║  ║    ✓ CORRECT: estimator.run([(qc, SparsePauliOp('ZZ'))])       ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 9. ❌ String comparison: job.status() == "DONE"                 ║  ║
+║  ║    ✓ CORRECT: job.status() == JobStatus.DONE (use enum!)       ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 10. ❌ Confusing lengths: len(get_bitstrings()) = unique        ║  ║
+║  ║     ✓ CORRECT: len(get_bitstrings()) = shots (total count)     ║  ║
+║  ║     ✓ CORRECT: len(get_counts()) = unique outcomes             ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 11. ❌ String vs int keys: counts[0] when using get_counts()   ║  ║
+║  ║     ✓ get_counts() uses strings: counts['00']                  ║  ║
+║  ║     ✓ get_int_counts() uses ints: int_counts[0]                ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 12. ❌ Assuming register always 'meas' (may be 'c', 'output')  ║  ║
+║  ║     ✓ CHECK: qc.cregs[0].name or use actual name from circuit  ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 13. ❌ Treating evs as scalar: ev = result[0].data.evs          ║  ║
+║  ║     ✓ evs is array: ev = result[0].data.evs[0] (index!)        ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 14. ❌ Assuming done() means success (also True for ERROR!)     ║  ║
+║  ║     ✓ Check explicit: job.status() == JobStatus.DONE           ║  ║
+║  ╟────────────────────────────────────────────────────────────────╢  ║
+║  ║ 15. ❌ Using V1 patterns: result.get_counts() (deprecated)      ║  ║
+║  ║     ✓ V2 requires: result[0].data.meas.get_counts()            ║  ║
+║  ╚════════════════════════════════════════════════════════════════╝  ║
+║                                                                        ║
+║  💡 MEMORY AIDS (CRITICAL!)                                            ║
+║  ├─ "RIDMG" - Result Index Data Meas Get (chain for Sampler)          ║
+║  ├─ "EVS = Expectation ValueS" (plural, property)                     ║
+║  ├─ "CPS" - Circuit Params Shots (Sampler PUB)                        ║
+║  ├─ "COPP" - Circuit Observable Params Precision (Estimator PUB)      ║
+║  ├─ "Methods Get, Properties Are" (get_counts() vs evs)               ║
+║  ├─ "Bitstrings = Shots, Counts = Unique" (length relationship)       ║
+║  ├─ "Trailing comma makes Tuple" ((circuit,) not (circuit))           ║
+║  └─ "Enum Not String" (JobStatus.DONE not "DONE")                     ║
+║                                                                        ║
+╚═══════════════════════════════════════════════════════════════════════╝
 ```
 
 ---

@@ -1180,86 +1180,309 @@ qc.rz(phi, qubit)    # Longitude
 ### 📚 Concept Checklist
 ```
 □ Qubit exists in superposition until measured (spinning coin analogy)
-□ Global phase (e^iθ|ψ⟩) is unobservable - affects nothing
-□ Relative phase (|0⟩+e^iθ|1⟩) matters - causes interference
+□ Measurement collapses superposition to definite state (slapping coin down)
+□ Classical bit: Heads OR Tails; Qubit: Heads AND Tails simultaneously
+□ Global phase (e^iθ|ψ⟩) is unobservable - affects nothing physically
+□ Relative phase (|0⟩+e^iθ|1⟩) matters - causes interference patterns
+□ Phase affects interference but NOT measurement probabilities directly
 □ Bloch sphere: |0⟩ at North pole, |1⟩ at South pole
 □ Equator states: |+⟩, |-⟩ (X-basis), |+i⟩, |-i⟩ (Y-basis)
-□ Pauli gates: X=bit flip, Z=phase flip, Y=iXZ (both)
-□ Hadamard creates superposition: H|0⟩=|+⟩, H|1⟩=|-⟩
-□ H is self-inverse: H²=I
-□ Hadamard conjugation: HXH=Z, HZH=X
-□ S²=Z, T⁴=Z, T²=S (phase gate hierarchy)
-□ Rotation gates use HALF-ANGLE in matrix: cos(θ/2), sin(θ/2)
-□ RX(π)=X, RY(π)=Y, RZ(π)=Z (up to global phase)
-□ CNOT creates entanglement - THE key 2-qubit gate
-□ CNOT direction matters: CX(control, target) - order is critical!
-□ CZ is symmetric: CZ(0,1)=CZ(1,0)
-□ Bell states: Φ=same bits (00/11), Ψ=different bits (01/10)
-□ Bell state |Φ⁺⟩ = H + CNOT (just 2 gates!)
-□ SWAP = 3 CNOTs (expensive!)
-□ Toffoli = 6 CNOTs (very expensive!)
-□ Fredkin = controlled SWAP (swaps if control=1)
-□ Pauli operators anticommute: XZ = -ZX
-□ barrier() has NO quantum effect - visual only
+□ X-basis eigenstates: |+⟩ and |-⟩ with eigenvalues +1 and -1
+□ Y-basis eigenstates: |+i⟩=(|0⟩+i|1⟩)/√2 and |-i⟩=(|0⟩-i|1⟩)/√2
+□ Z-basis eigenstates: |0⟩ and |1⟩ (computational basis)
+□ Pauli-X gate: Bit flip |0⟩↔|1⟩, π rotation around X-axis
+□ Pauli-Y gate: Combined flip with complex phases, Y=iXZ relation
+□ Pauli-Z gate: Phase flip, Z|0⟩=|0⟩ (unchanged!), Z|1⟩=-|1⟩
+□ X flips amplitudes: X(α|0⟩+β|1⟩) = α|1⟩+β|0⟩
+□ Z flips phase on |1⟩ component only: Z(α|0⟩+β|1⟩) = α|0⟩-β|1⟩
+□ X²=Y²=Z²=I (all Paulis are self-inverse/involutory)
+□ Pauli eigenvalues: Always ±1 for all Pauli operators
+□ Paulis are Hermitian: X†=X, Y†=Y, Z†=Z
+□ Paulis are unitary: X†X=I (preserves quantum state norm)
+□ Hadamard creates equal superposition: H|0⟩=|+⟩=(|0⟩+|1⟩)/√2
+□ Hadamard acts as basis transformer: computational ↔ X-basis
+□ H is self-inverse: H²=I (applying twice returns to original)
+□ Hadamard conjugation: HXH=Z, HZH=X (swaps X and Z bases)
+□ HYH=-Y (Y picks up minus sign under Hadamard)
+□ Hadamard appears in 80%+ of quantum algorithms (superposition creator)
+□ S gate: π/2 phase rotation, S|1⟩=i|1⟩, also called √Z
+□ T gate: π/4 phase rotation, T|1⟩=e^(iπ/4)|1⟩, also called √S or π/8 gate
+□ Phase gate hierarchy: T²=S, S²=Z, T⁴=Z
+□ P(λ) gate: General phase gate, P(π/2)=S, P(π/4)=T, P(π)=Z
+□ Phase gates only affect |1⟩ component: P(λ)|0⟩=|0⟩, P(λ)|1⟩=e^(iλ)|1⟩
+□ S and T are Clifford gates (important for error correction)
+□ S† (S-dagger): Inverse of S, rotates phase by -π/2
+□ T† (T-dagger): Inverse of T, rotates phase by -π/4
+□ Rotation gates: RX(θ), RY(θ), RZ(θ) parameterized by angle θ
+□ Rotation gates use HALF-ANGLE formula: cos(θ/2), sin(θ/2) in matrix
+□ RX rotates around X-axis on Bloch sphere (like tilting globe east-west)
+□ RY rotates around Y-axis (like tilting globe north-south)
+□ RZ rotates around Z-axis (like spinning globe on its axis)
+□ Special cases: RX(π)=X, RY(π)=Y, RZ(π)=Z (up to global phase)
+□ Rotation gates are essential for VQE, QAOA variational algorithms
+□ Pauli group: All tensor products of {I,X,Y,Z} with phases {±1, ±i}
+□ Pauli class (quantum_info): Algebraic object for calculations, NOT a gate
+□ Pauli operators anticommute: XY=-YX, YZ=-ZY, ZX=-XZ
+□ Pauli operators commute with themselves: XX=I, XYX=-Y
+□ Pauli composition: XY=iZ, YZ=iX, ZX=iY (cyclic with +i)
+□ Reverse composition: YX=-iZ, ZY=-iX, XZ=-iY (anti-cyclic with -i)
+□ Pauli string ordering: 'XYZ' means X⊗Y⊗Z (RIGHT-TO-LEFT: X on q2!)
+□ Pauli phase prefixes: '' = +1, 'i' = +i, '-' = -1, '-i' = -i
+□ Pauli X and Z array representation: I=[0,0], X=[1,0], Y=[1,1], Z=[0,1]
+□ CNOT gate: Controlled-NOT, flips target if control is |1⟩
+□ CNOT creates entanglement when combined with Hadamard
+□ CNOT direction matters: CX(control, target) - order is CRITICAL!
+□ CNOT truth table: |10⟩→|11⟩ (flip), |11⟩→|10⟩ (flip), |00⟩ and |01⟩ unchanged
+□ CNOT is self-inverse: CX²=I (two CNOTs cancel)
+□ Bell states: Four maximally entangled 2-qubit states
+□ Bell state classification: Φ=same bits (00/11), Ψ=different bits (01/10)
+□ Bell state signs: + has plus, - has minus between terms
+□ |Φ⁺⟩=(|00⟩+|11⟩)/√2 most common, created by H+CX (just 2 gates!)
+□ |Φ⁻⟩=(|00⟩-|11⟩)/√2 has minus sign between terms
+□ |Ψ⁺⟩=(|01⟩+|10⟩)/√2 anti-correlated bits
+□ |Ψ⁻⟩=(|01⟩-|10⟩)/√2 anti-correlated with minus sign
+□ Measuring one Bell state qubit instantly determines the other (entanglement)
+□ CZ gate: Controlled-Z, adds -1 phase to |11⟩ state only
+□ CZ is symmetric: CZ(0,1)=CZ(1,0) - order doesn't matter!
+□ CZ relation: CZ=H·CX·H (Hadamard conjugation of CNOT on target)
+□ CZ only affects |11⟩→-|11⟩, all other states unchanged
+□ SWAP gate: Exchanges states of two qubits |01⟩↔|10⟩
+□ SWAP decomposition: 3 CNOTs required (CX(a,b)·CX(b,a)·CX(a,b))
+□ SWAP is expensive on hardware - 3× CNOT cost
+□ SWAP is symmetric: SWAP(0,1)=SWAP(1,0)
+□ Toffoli gate (CCX): Double-controlled NOT, flips target if BOTH controls=|1⟩
+□ Toffoli implements classical AND: Output=1 only if both inputs=1
+□ Toffoli decomposition: 6 CNOTs on hardware (very expensive!)
+□ Toffoli is reversible - quantum version of classical AND gate
+□ Fredkin gate (CSWAP): Controlled-SWAP, swaps targets if control=|1⟩
+□ Fredkin decomposition: 8+ gates on hardware (most expensive!)
+□ Fredkin conserves Hamming weight (number of |1⟩s unchanged)
+□ initialize() prepares arbitrary quantum state from amplitude vector
+□ initialize() is expensive - synthesizes many gates for decomposition
+□ initialize() is NOT a single gate - it's a gate synthesis routine
+□ reset() returns qubit to |0⟩ via measurement + conditional flip
+□ reset() is active reset (mid-circuit), not just initialization
+□ reset() useful for qubit recycling in long algorithms
+□ barrier() is visual separator - NO quantum effect whatsoever!
+□ barrier() blocks transpiler optimization across it (debugging tool)
+□ barrier() does NOT collapse superposition or affect state
+□ GHZ state: Multi-qubit entangled state (|000⟩+|111⟩)/√2 for 3 qubits
+□ GHZ creation: H on first qubit + CNOT cascade to others
 ```
 
 ### 💻 Code Pattern Checklist
 ```
-□ qc.x(qubit) applies Pauli-X (bit flip)
-□ qc.y(qubit) applies Pauli-Y (bit + phase flip with i factors)
-□ qc.z(qubit) applies Pauli-Z (phase flip)
-□ qc.h(qubit) applies Hadamard (creates superposition)
-□ qc.s(qubit) applies S gate (π/2 phase)
-□ qc.sdg(qubit) applies S† (S-dagger, inverse of S)
-□ qc.t(qubit) applies T gate (π/4 phase)
-□ qc.tdg(qubit) applies T† (T-dagger, inverse of T)
-□ qc.p(lambda, qubit) applies P(λ) phase gate
-□ qc.rx(theta, qubit) rotates around X-axis by theta
-□ qc.ry(theta, qubit) rotates around Y-axis by theta
-□ qc.rz(theta, qubit) rotates around Z-axis by theta
-□ qc.cx(control, target) applies CNOT (control FIRST!)
-□ qc.cz(q1, q2) applies CZ (order doesn't matter)
-□ qc.swap(q1, q2) swaps two qubits
-□ qc.ccx(c1, c2, target) applies Toffoli (AND gate)
-□ qc.cswap(control, t1, t2) applies Fredkin (controlled SWAP)
-□ qc.initialize(state_vector, qubits) prepares arbitrary state
-□ qc.reset(qubit) resets qubit to |0⟩
-□ qc.barrier() adds visual separator (no quantum effect)
-□ from qiskit.quantum_info import Pauli
-□ p = Pauli('X') creates Pauli object
-□ p = Pauli('XYZ') creates multi-qubit Pauli (RIGHT-TO-LEFT order!)
-□ p1.commutes(p2) checks if operators commute
-□ p1.anticommutes(p2) checks if operators anticommute
-□ (p1 @ p2).to_label() computes composition and returns label
-□ p.to_matrix() converts Pauli to numpy matrix
+□ from qiskit import QuantumCircuit imports circuit class
+□ qc = QuantumCircuit(n) creates n-qubit circuit
+□ qc = QuantumCircuit(n, m) creates n qubits, m classical bits
+□ qc.x(qubit) applies Pauli-X (bit flip) to specified qubit
+□ qc.x(0) applies X to qubit 0 (zero-indexed)
+□ qc.y(qubit) applies Pauli-Y (bit + phase flip with ±i factors)
+□ qc.z(qubit) applies Pauli-Z (phase flip, Z|0⟩=|0⟩, Z|1⟩=-|1⟩)
+□ qc.h(qubit) applies Hadamard (creates superposition from basis states)
+□ qc.h(0); qc.h(1); qc.h(2) creates uniform superposition on 3 qubits
+□ for i in range(n): qc.h(i) applies Hadamard to all n qubits
+□ qc.s(qubit) applies S gate (π/2 phase rotation)
+□ qc.sdg(qubit) applies S† (S-dagger, inverse: rotates -π/2)
+□ qc.t(qubit) applies T gate (π/4 phase rotation)
+□ qc.tdg(qubit) applies T† (T-dagger, inverse: rotates -π/4)
+□ qc.p(lambda_angle, qubit) applies P(λ) arbitrary phase gate
+□ qc.p(np.pi/2, 0) equivalent to S gate (up to global phase)
+□ qc.p(np.pi/4, 0) equivalent to T gate (up to global phase)
+□ qc.p(np.pi, 0) equivalent to Z gate
+□ qc.rx(theta, qubit) rotates angle θ around X-axis (Bloch sphere)
+□ qc.ry(theta, qubit) rotates angle θ around Y-axis
+□ qc.rz(theta, qubit) rotates angle θ around Z-axis
+□ import numpy as np; qc.rx(np.pi, 0) applies X gate (RX(π)=X)
+□ qc.ry(np.pi/2, 0) rotates 90° around Y-axis
+□ qc.ry(theta, 0); qc.rz(phi, 0) common VQE ansatz pattern
+□ qc.rx(theta, qubit) for qubit in range(n) applies RX to all qubits
+□ qc.cx(control, target) applies CNOT (control FIRST parameter!)
+□ qc.cx(0, 1) flips qubit 1 if qubit 0 is |1⟩
+□ qc.cnot(control, target) alternative name for CNOT (same as cx)
+□ qc.h(0); qc.cx(0, 1) creates Bell state |Φ⁺⟩ = (|00⟩+|11⟩)/√2
+□ qc.x(0); qc.h(0); qc.cx(0, 1) creates Bell state |Φ⁻⟩
+□ qc.h(0); qc.cx(0, 1); qc.x(1) creates Bell state |Ψ⁺⟩
+□ qc.x(0); qc.h(0); qc.cx(0, 1); qc.x(1) creates Bell state |Ψ⁻⟩
+□ for i in range(n-1): qc.cx(i, i+1) creates CNOT chain
+□ qc.h(0); for i in range(1,n): qc.cx(0,i) creates GHZ state
+□ qc.cz(qubit1, qubit2) applies CZ gate (order doesn't matter!)
+□ qc.cz(0, 1) equivalent to qc.cz(1, 0) - symmetric
+□ qc.h(1); qc.cx(0, 1); qc.h(1) equivalent to qc.cz(0, 1)
+□ qc.swap(qubit1, qubit2) swaps states of two qubits
+□ qc.swap(0, 1) exchanges |01⟩↔|10⟩
+□ qc.ccx(control1, control2, target) applies Toffoli (double-controlled NOT)
+□ qc.toffoli(c1, c2, target) alternative name for Toffoli
+□ qc.ccx(0, 1, 2) flips qubit 2 if both qubits 0 AND 1 are |1⟩
+□ qc.cswap(control, target1, target2) applies Fredkin (controlled-SWAP)
+□ qc.fredkin(control, t1, t2) alternative name for Fredkin
+□ qc.cswap(0, 1, 2) swaps qubits 1↔2 if qubit 0 is |1⟩
+□ qc.initialize(state_vector, qubits) prepares arbitrary state from amplitudes
+□ qc.initialize([1, 0], 0) prepares |0⟩ state
+□ qc.initialize([0, 1], 0) prepares |1⟩ state
+□ qc.initialize([1/np.sqrt(2), 1/np.sqrt(2)], 0) prepares |+⟩ state
+□ qc.initialize([1/np.sqrt(2), -1/np.sqrt(2)], 0) prepares |-⟩ state
+□ state = [0.5, 0.5, 0.5, 0.5]; qc.initialize(state, [0,1]) equal superposition
+□ qc.reset(qubit) resets qubit to |0⟩ via measurement + conditional X
+□ qc.x(0); qc.reset(0) results in |0⟩ (reset always returns |0⟩)
+□ qc.barrier() adds visual separator (no quantum operation!)
+□ qc.barrier([0, 1]) adds barrier on specific qubits only
+□ qc.barrier(); qc.measure_all() separates circuit from measurement visually
+□ qc.h(0); qc.barrier(); qc.cx(0, 1) prevents optimization across barrier
+□ from qiskit.quantum_info import Pauli imports Pauli class
+□ p = Pauli('X') creates single-qubit Pauli-X object
+□ p = Pauli('Y') creates Pauli-Y, p = Pauli('Z') creates Pauli-Z
+□ p = Pauli('I') creates identity operator
+□ p = Pauli('XY') creates X⊗Y (X on q1, Y on q0 - RIGHT-TO-LEFT!)
+□ p = Pauli('XYZ') creates X⊗Y⊗Z (X on q2, Y on q1, Z on q0)
+□ p = Pauli('iX') creates i·X with explicit +i phase
+□ p = Pauli('-X') creates -X with minus phase
+□ p = Pauli('-iZ') creates -i·Z with -i phase
+□ X, Y, Z = Pauli('X'), Pauli('Y'), Pauli('Z') creates three Pauli objects
+□ p.num_qubits returns number of qubits (e.g., Pauli('XYZ').num_qubits = 3)
+□ p.phase returns phase as integer: 0=+1, 1=+i, 2=-1, 3=-i
+□ p.x returns X bitarray [False, True] for Z means X bit = [0,1]
+□ p.z returns Z bitarray [True, False] for X means Z bit = [1,0]
+□ p1.commutes(p2) returns True if p1·p2 = p2·p1
+□ Pauli('X').commutes(Pauli('X')) returns True (XX = XX)
+□ Pauli('X').commutes(Pauli('Z')) returns False (XZ ≠ ZX)
+□ p1.anticommutes(p2) returns True if p1·p2 = -p2·p1
+□ Pauli('X').anticommutes(Pauli('Z')) returns True (XZ = -ZX)
+□ (p1 @ p2).to_label() computes composition and returns string label
+□ (Pauli('X') @ Pauli('Z')).to_label() returns 'iY' (XZ = iY)
+□ (Pauli('Y') @ Pauli('Z')).to_label() returns 'iX' (YZ = iX)
+□ (Pauli('Z') @ Pauli('X')).to_label() returns '-iY' (ZX = -iY)
+□ p.tensor(q) creates tensor product p⊗q (left to right)
+□ Pauli('X').tensor(Pauli('Z')) returns Pauli('XZ')
+□ p.expand(n) adds n identity operators: Pauli('X').expand(2) → 'XII'
+□ p.to_matrix() converts to numpy array (2^n × 2^n matrix)
+□ Pauli('X').to_matrix() returns [[0,1],[1,0]]
 □ p.to_instruction() converts Pauli to circuit instruction
+□ qc.append(Pauli('XYZ').to_instruction(), [0,1,2]) adds Pauli to circuit
+□ p.evolve(gate) returns Pauli after gate conjugation U·P·U†
+□ from qiskit.circuit.library import HGate imports Hadamard gate class
+□ Pauli('X').evolve(HGate()) returns Pauli('Z') (HXH = Z)
+□ Pauli('Z').evolve(HGate()) returns Pauli('X') (HZH = X)
 ```
 
 ### ⚠️ Exam Trap Checklist
 ```
 □ TRAP: Z|0⟩ = |0⟩ (unchanged!) NOT |1⟩
-  → Z only adds phase to |1⟩ component
-□ TRAP: X|+⟩ = |+⟩ (unchanged!) because amplitudes are equal
-□ TRAP: HXH = Z (NOT X!) and HZH = X
-  → Hadamard swaps X and Z bases
-□ TRAP: S² = Z (NOT I!) and T⁴ = Z (NOT T² = Z!)
-  → T² = S, T⁴ = Z, S² = Z
-□ TRAP: CX(0,1) ≠ CX(1,0) - direction matters!
-  → First parameter is control, second is target
-□ TRAP: CZ IS symmetric: CZ(0,1) = CZ(1,0)
-  → Unlike CNOT, CZ doesn't care about order
-□ TRAP: X and Z anticommute: XZ = -ZX (NOT XZ = ZX!)
-  → Different Paulis anticommute, same Paulis commute
-□ TRAP: Pauli('XYZ') means X⊗Y⊗Z (X on q2, Y on q1, Z on q0)
-  → RIGHT-TO-LEFT reading! Not left-to-right!
-□ TRAP: barrier() has NO quantum effect!
-  → Only visual separator and optimization blocker
-□ TRAP: initialize() is expensive - adds many gates
-  → Not a simple single gate operation
-□ TRAP: Y adds complex phases: Y|0⟩ = i|1⟩ (not just |1⟩)
-  → Y = iXZ has the i factor
-□ TRAP: Rotation matrices use θ/2 (half-angle!)
-  → RX(π) uses cos(π/2) and sin(π/2) in matrix
+  → Z only adds -1 phase to |1⟩ component, leaves |0⟩ alone
+□ TRAP: Z on computational basis looks like it does nothing
+  → Z|0⟩=|0⟩, Z|1⟩=-|1⟩ - phase invisible in computational basis!
+□ TRAP: X|+⟩ = |+⟩ (unchanged!) because X swaps equal amplitudes
+  → X(|0⟩+|1⟩)/√2 = (|1⟩+|0⟩)/√2 = |+⟩
+□ TRAP: Similarly X|-⟩ = |-⟩ (unchanged for |-⟩ state)
+□ TRAP: Z|+⟩ = |-⟩ (CHANGED!) - Z flips sign in X-basis
+  → Z(|0⟩+|1⟩)/√2 = (|0⟩-|1⟩)/√2 = |-⟩
+□ TRAP: HXH = Z (NOT X!) - Hadamard transforms X to Z
+  → Hadamard swaps X-basis and Z-basis operations
+□ TRAP: HZH = X (NOT Z!) - Hadamard transforms Z to X
+  → This is basis change: computational ↔ Hadamard basis
+□ TRAP: HYH = -Y (Y gets minus sign!)
+  → Y is special - picks up phase under Hadamard
+□ TRAP: Thinking H|+⟩ = something new
+  → H|+⟩ = |0⟩ (Hadamard is self-inverse!)
+□ TRAP: Thinking H|-⟩ = something new
+  → H|-⟩ = |1⟩ (H² = I always)
+□ TRAP: S² = Z (NOT I!) - Two S gates make Z
+  → S adds π/2 phase twice = π phase total = Z
+□ TRAP: T² = Z (WRONG!) - T² = S (NOT Z!)
+  → T adds π/4 phase twice = π/2 total = S gate
+□ TRAP: T⁴ = Z (NOT T² = Z!)
+  → T⁴ adds 4×(π/4) = π phase = Z
+□ TRAP: Thinking P(π/2) is exactly S
+  → P(π/2) = S up to global phase (differs by e^(iπ/4))
+□ TRAP: Rotation gate matrix uses θ directly
+  → WRONG! Matrix uses θ/2 (half-angle formula)
+  → RX(θ) = [[cos(θ/2), -i·sin(θ/2)], [-i·sin(θ/2), cos(θ/2)]]
+□ TRAP: RX(π) equals X exactly
+  → Actually RX(π) = -iX (global phase difference)
+  → Physically equivalent but mathematically different
+□ TRAP: RZ(π) equals Z exactly
+  → Actually RZ(π) = -iZ (global phase e^(-iπ/2) difference)
+□ TRAP: CX(0,1) = CX(1,0) like addition
+  → WRONG! Control and target are different roles
+  → CX(0,1): q0 controls, q1 flips | CX(1,0): q1 controls, q0 flips
+□ TRAP: Testing |00⟩ and concluding CX(0,1) = CX(1,0)
+  → |00⟩ unchanged by both! Test with |10⟩ or |01⟩ instead
+  → CX(0,1)|10⟩ = |11⟩ but CX(1,0)|10⟩ = |10⟩ (different!)
+□ TRAP: CZ is asymmetric like CNOT
+  → WRONG! CZ IS symmetric: CZ(0,1) = CZ(1,0)
+  → CZ has no control/target distinction - both qubits equal
+□ TRAP: Thinking CZ flips a qubit like CNOT
+  → CZ only adds phase: CZ|11⟩ = -|11⟩, no bit flip!
+□ TRAP: SWAP(0,1) is a single native gate
+  → WRONG! SWAP decomposes to 3 CNOTs on hardware
+  → SWAP = CX(a,b)·CX(b,a)·CX(a,b)
+□ TRAP: Thinking SWAP is cheap (it's 3× CNOT cost!)
+□ TRAP: Toffoli is 3 gates (1 per qubit)
+  → WRONG! Toffoli decomposes to 6 CNOTs
+  → Much more expensive than it looks
+□ TRAP: Fredkin is just SWAP + control (4 gates)
+  → WRONG! Fredkin decomposes to 8+ gates
+  → Most expensive standard multi-qubit gate
+□ TRAP: X and Z commute: XZ = ZX
+  → WRONG! X and Z anticommute: XZ = -ZX
+  → Only identical Paulis commute: XX=I, not XZ
+□ TRAP: All Paulis commute with each other
+  → WRONG! Different Paulis anticommute
+  → XY = iZ but YX = -iZ (anti-commutation!)
+□ TRAP: XY = YX (thinking composition commutes)
+  → WRONG! XY = iZ but YX = -iZ (sign flip!)
+□ TRAP: X @ Z = Y (missing the i)
+  → WRONG! XZ = iY (complex phase factor!)
+  → Must include 'i' in result
+□ TRAP: Pauli('XYZ') means X on q0
+  → WRONG! RIGHT-TO-LEFT: X on q2, Y on q1, Z on q0
+  → Think tensor product reading: X⊗Y⊗Z
+□ TRAP: Pauli('XY') and Pauli('YX') are same
+  → WRONG! Different qubit assignments!
+  → 'XY' = X⊗Y (X on q1, Y on q0)
+  → 'YX' = Y⊗X (Y on q1, X on q0)
+□ TRAP: Pauli class and gate methods are same
+  → Pauli('X') creates algebraic object (for math)
+  → qc.x(0) applies physical gate to circuit
+  → Don't confuse them!
+□ TRAP: p.to_matrix() returns 2×2 for multi-qubit
+  → WRONG! Returns 2^n × 2^n matrix
+  → Pauli('XY').to_matrix() is 4×4, not 2×2
+□ TRAP: Bell state needs X or Z gates
+  → WRONG! |Φ⁺⟩ uses only H + CX (2 gates!)
+  → Most algorithms start from |Φ⁺⟩
+□ TRAP: Phi and Psi states are same thing
+  → Φ: same bits (00, 11) - "twins"
+  → Ψ: different bits (01, 10) - "opposites"
+□ TRAP: + and - in Bell states don't matter
+  → WRONG! + has plus sign, - has minus sign
+  → Changes interference patterns and outcomes
+□ TRAP: barrier() collapses superposition
+  → WRONG! barrier() has ZERO quantum effect
+  → Only visual line and blocks optimization
+□ TRAP: barrier() is needed for correct execution
+  → WRONG! It's only for visualization/debugging
+  → Circuit works identically with or without it
+□ TRAP: initialize() is a single operation
+  → WRONG! initialize() synthesizes many gates
+  → Very expensive for complex states
+□ TRAP: reset() and initialize([1,0],0) are same
+  → reset() uses measurement (mid-circuit operation)
+  → initialize() uses gate synthesis (no measurement)
+□ TRAP: Y|0⟩ = |1⟩ (forgetting the i)
+  → WRONG! Y|0⟩ = i|1⟩ (complex phase!)
+  → Y|1⟩ = -i|0⟩ (also has phase)
+□ TRAP: Y = XZ (missing factor)
+  → WRONG! Y = iXZ (i factor is critical!)
+□ TRAP: Pauli phase prefixes are optional
+  → WRONG! 'iX' ≠ 'X' - phase matters!
+  → Pauli('iX') and Pauli('X') are different operators
+□ TRAP: Global phase matters for measurements
+  → WRONG! e^(iθ)|ψ⟩ has same probabilities as |ψ⟩
+  → Global phase is unobservable physically
+□ TRAP: Relative phase doesn't matter
+  → WRONG! (|0⟩+|1⟩)/√2 ≠ (|0⟩-|1⟩)/√2
+  → Relative phase causes interference effects
 ```
 
 ### 🧠 Mnemonic Recall Box
@@ -1269,40 +1492,110 @@ qc.rz(phi, qubit)    # Longitude
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │ 🔄 "X-Men Flip bits, Z-Men flip Phase"                          │
-│    X: |0⟩↔|1⟩ (bit flip)                                        │
-│    Z: adds -1 to |1⟩ (phase flip)                               │
+│    X: |0⟩↔|1⟩ (bit flip like light switch)                      │
+│    Z: adds -1 to |1⟩ only (phase flip, invisible ink)          │
+│    Think: X = visible change, Z = hidden change                 │
 │                                                                  │
 │ ➕ "Hadamard Makes Plus"                                         │
 │    H|0⟩ = |+⟩ = (|0⟩+|1⟩)/√2                                    │
 │    H|1⟩ = |-⟩ = (|0⟩-|1⟩)/√2                                    │
+│    Think: H = superposition creator (coin flipper)              │
+│                                                                  │
+│ 🔄 "H² = I = Identity" (H is self-inverse)                      │
+│    Apply Hadamard twice → back to start                         │
+│    H → H → Original (like double negative)                      │
+│                                                                  │
+│ ↔️ "HXH = Z, HZH = X" (Hadamard Swap)                           │
+│    Hadamard swaps X-basis ↔ Z-basis                             │
+│    Think: H = basis transformer                                  │
 │                                                                  │
 │ 2️⃣ "S-Squared equals Z"                                          │
 │    S² = Z (two S gates = one Z)                                 │
+│    S adds π/2 phase, twice = π = Z                              │
 │                                                                  │
 │ 4️⃣ "T-Fourth equals Z"                                           │
-│    T⁴ = Z (T² = S, so T⁴ = S² = Z)                              │
+│    T⁴ = Z (but T² = S, NOT Z!)                                  │
+│    T adds π/4, four times = π = Z                               │
+│    Chain: T → T → S,  S → S → Z                                 │
 │                                                                  │
-│ ⬅️ "Control BEFORE Target"                                       │
+│ 📐 "Half-Angle in Rotation Matrix"                              │
+│    RX(θ) matrix uses cos(θ/2) and sin(θ/2)                      │
+│    Not θ directly! Remember the /2                              │
+│                                                                  │
+│ 🧮 "R-π equals Pauli" (up to global phase)                      │
+│    RX(π)=X, RY(π)=Y, RZ(π)=Z                                    │
+│    Full rotation (π) = Pauli gate                               │
+│                                                                  │
+│ ⬅️ "Control BEFORE Target" (CNOT parameter order)               │
 │    qc.cx(control, target) - first arg is control!               │
+│    Think: Boss (control) before Worker (target)                 │
 │                                                                  │
-│ 🔀 "CZ is Symmetric"                                             │
+│ ❌ "CNOT NOT symmetric" (direction matters!)                     │
+│    CX(0,1) ≠ CX(1,0)                                            │
+│    Control and target are different roles                        │
+│                                                                  │
+│ ✅ "CZ is Symmetric" (no control/target distinction)             │
 │    CZ(0,1) = CZ(1,0) - order doesn't matter                     │
+│    Think: CZ = mutual agreement (both equal)                    │
 │                                                                  │
-│ 👯 "Phi = same, Psi = different"                                 │
-│    Φ states: |00⟩, |11⟩ (same bits)                             │
-│    Ψ states: |01⟩, |10⟩ (different bits)                        │
+│ 👯 "Phi = same, Psi = different" (Bell state bits)              │
+│    Φ states: |00⟩, |11⟩ (same bits = twins)                     │
+│    Ψ states: |01⟩, |10⟩ (different bits = opposites)            │
+│                                                                  │
+│ ➕➖ "Plus/Minus in Bell names" (sign between terms)             │
+│    |Φ⁺⟩ has + sign: (|00⟩+|11⟩)/√2                              │
+│    |Φ⁻⟩ has - sign: (|00⟩-|11⟩)/√2                              │
+│                                                                  │
+│ 2️⃣ "Two Gates for Bell" (H + CX)                                │
+│    |Φ⁺⟩ = H(0) → CX(0,1) - just 2 gates!                        │
+│    Most common entangled state                                   │
 │                                                                  │
 │ 3️⃣ "Three CNOTs to SWAP"                                         │
 │    SWAP = CX(a,b)·CX(b,a)·CX(a,b)                               │
+│    SWAP is expensive - 3× CNOT cost!                            │
 │                                                                  │
-│ 🧮 "R-π equals Pauli"                                            │
-│    RX(π)=X, RY(π)=Y, RZ(π)=Z (up to global phase)               │
+│ 6️⃣ "Six CNOTs for Toffoli" (CCX decomposition)                  │
+│    Toffoli decomposes to 6 CNOTs                                 │
+│    Very expensive on hardware!                                   │
+│                                                                  │
+│ 🔤 "XYZ = X·Y·Z cyclic with i"                                  │
+│    XY = iZ,  YZ = iX,  ZX = iY  (positive i)                    │
+│    YX = -iZ, ZY = -iX, XZ = -iY (negative i reverse)            │
+│    Think: Forward = +i, Backward = -i                           │
+│                                                                  │
+│ ➖ "X and Z anti-commute" (XZ = -ZX)                             │
+│    Different Paulis anticommute (sign flip)                      │
+│    Same Paulis commute: XX = I                                  │
+│                                                                  │
+│ ⬅️ "Pauli RIGHT-TO-LEFT" (tensor order)                          │
+│    Pauli('XYZ') = X⊗Y⊗Z                                         │
+│    X on q2 (rightmost in tensor), Z on q0 (leftmost)           │
+│    Think: Read backwards from string!                            │
 │                                                                  │
 │ 📊 "Pauli Class Calculates, Gates Apply"                         │
-│    Pauli('X') for algebra, qc.x() for circuits                  │
+│    Pauli('X') for algebra (math object)                          │
+│    qc.x(0) for circuits (physical gate)                         │
+│    Different tools for different jobs!                           │
 │                                                                  │
 │ 🚧 "Barriers Block optimization, not qubits"                     │
-│    barrier() = visual only, no quantum effect                   │
+│    barrier() = visual only, NO quantum effect                    │
+│    Only stops transpiler optimization                            │
+│                                                                  │
+│ 💰 "initialize() is Expensive" (many gates)                      │
+│    Not a single gate - synthesizes many operations              │
+│    Use sparingly in algorithms                                   │
+│                                                                  │
+│ 🔄 "reset() Returns to Zero" (always |0⟩)                       │
+│    reset() → |0⟩ via measurement + conditional flip             │
+│    Active reset, useful for qubit recycling                      │
+│                                                                  │
+│ 🌍 "Global phase Invisible" (e^iθ unobservable)                 │
+│    e^iθ|ψ⟩ ≡ |ψ⟩ for measurements                               │
+│    Rotating entire universe = nobody notices                     │
+│                                                                  │
+│ 🎯 "Relative phase Matters" (causes interference)                │
+│    |+⟩ = (|0⟩+|1⟩)/√2 ≠ |-⟩ = (|0⟩-|1⟩)/√2                      │
+│    Phase between components affects outcomes                     │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -1314,49 +1607,126 @@ qc.rz(phi, qubit)    # Longitude
 ║                (16% of Exam - ~11 Questions)                          ║
 ╠═══════════════════════════════════════════════════════════════════════╣
 ║                                                                        ║
-║  📐 SINGLE-QUBIT GATES                                                 ║
-║  ├─ Paulis: qc.x() = bit flip, qc.z() = phase flip, qc.y() = iXZ     ║
-║  ├─ Hadamard: qc.h() creates superposition (H|0⟩ = |+⟩)              ║
-║  ├─ Phase: qc.s() = π/2, qc.t() = π/4, qc.p(λ) = custom             ║
-║  ├─ Rotation: qc.rx(θ), qc.ry(θ), qc.rz(θ)                          ║
-║  └─ Inverses: qc.sdg() = S†, qc.tdg() = T†                           ║
+║  📐 SINGLE-QUBIT GATES (Pauli, Hadamard, Phase, Rotation)             ║
+║  ├─ PAULI GATES (X, Y, Z)                                             ║
+║  │   • X = bit flip: |0⟩↔|1⟩, qc.x(qubit)                            ║
+║  │   • Y = both flips + i phases: Y=iXZ, qc.y(qubit)                 ║
+║  │   • Z = phase flip: Z|0⟩=|0⟩, Z|1⟩=-|1⟩, qc.z(qubit)              ║
+║  │   • All Paulis: X²=Y²=Z²=I (self-inverse)                         ║
+║  ├─ HADAMARD (H) - The Superposition Creator                          ║
+║  │   • H|0⟩ = |+⟩ = (|0⟩+|1⟩)/√2, qc.h(qubit)                        ║
+║  │   • H|1⟩ = |-⟩ = (|0⟩-|1⟩)/√2                                     ║
+║  │   • H² = I (self-inverse), HXH = Z, HZH = X                       ║
+║  │   • Appears in 80%+ of quantum algorithms!                         ║
+║  ├─ PHASE GATES (S, T, P)                                             ║
+║  │   • S: π/2 phase, S² = Z, qc.s(qubit), qc.sdg(qubit)              ║
+║  │   • T: π/4 phase, T⁴ = Z, T² = S, qc.t(qubit), qc.tdg(qubit)     ║
+║  │   • P(λ): Arbitrary phase, qc.p(lambda, qubit)                    ║
+║  │   • Relations: P(π/2)=S, P(π/4)=T, P(π)=Z                         ║
+║  └─ ROTATION GATES (RX, RY, RZ)                                       ║
+║      • qc.rx(θ, qubit), qc.ry(θ, qubit), qc.rz(θ, qubit)            ║
+║      • Matrix uses θ/2 (half-angle formula!)                          ║
+║      • RX(π)=X, RY(π)=Y, RZ(π)=Z (up to global phase)                ║
+║      • Essential for VQE/QAOA variational algorithms                  ║
 ║                                                                        ║
-║  🔗 MULTI-QUBIT GATES                                                  ║
-║  ├─ CNOT: qc.cx(control, target) - creates entanglement!             ║
-║  ├─ CZ: qc.cz(q1, q2) - symmetric (order doesn't matter)             ║
-║  ├─ SWAP: qc.swap(q1, q2) - costs 3 CNOTs                            ║
-║  ├─ Toffoli: qc.ccx(c1, c2, target) - costs 6 CNOTs                  ║
-║  └─ Fredkin: qc.cswap(c, t1, t2) - controlled SWAP                   ║
+║  🔗 MULTI-QUBIT GATES (CNOT, CZ, SWAP, Toffoli, Fredkin)              ║
+║  ├─ CNOT/CX (Controlled-NOT) - THE Entanglement Creator              ║
+║  │   • qc.cx(control, target) - control FIRST parameter!             ║
+║  │   • |10⟩→|11⟩, |11⟩→|10⟩ (flips target if control=1)              ║
+║  │   • Direction matters: CX(0,1) ≠ CX(1,0)                          ║
+║  │   • CX² = I (self-inverse)                                        ║
+║  ├─ CZ (Controlled-Z) - Symmetric Phase Gate                          ║
+║  │   • qc.cz(q1, q2) - order DOESN'T matter!                         ║
+║  │   • CZ(0,1) = CZ(1,0) unlike CNOT                                 ║
+║  │   • Only affects |11⟩→-|11⟩                                        ║
+║  │   • CZ = H·CX·H (Hadamard conjugate)                              ║
+║  ├─ SWAP - Exchange Two Qubits                                        ║
+║  │   • qc.swap(q1, q2)                                                ║
+║  │   • Decomposes to 3 CNOTs (expensive!)                             ║
+║  │   • SWAP = CX(a,b)·CX(b,a)·CX(a,b)                                ║
+║  ├─ TOFFOLI (CCX) - Double-Controlled NOT                             ║
+║  │   • qc.ccx(c1, c2, target) - quantum AND gate                     ║
+║  │   • Flips target if BOTH controls = |1⟩                           ║
+║  │   • Decomposes to 6 CNOTs (very expensive!)                        ║
+║  └─ FREDKIN (CSWAP) - Controlled-SWAP                                 ║
+║      • qc.cswap(control, t1, t2)                                      ║
+║      • Swaps t1↔t2 if control = |1⟩                                  ║
+║      • Decomposes to 8+ gates (most expensive!)                       ║
 ║                                                                        ║
-║  💕 BELL STATES (memorize these!)                                      ║
-║  ├─ |Φ⁺⟩: qc.h(0); qc.cx(0,1) → (|00⟩+|11⟩)/√2                       ║
-║  ├─ |Φ⁻⟩: qc.x(0); qc.h(0); qc.cx(0,1) → (|00⟩-|11⟩)/√2              ║
-║  ├─ |Ψ⁺⟩: qc.h(0); qc.cx(0,1); qc.x(1) → (|01⟩+|10⟩)/√2              ║
-║  └─ |Ψ⁻⟩: qc.x(0); qc.h(0); qc.cx(0,1); qc.x(1) → (|01⟩-|10⟩)/√2     ║
+║  💕 BELL STATES (Maximally Entangled 2-Qubit States)                  ║
+║  ├─ Classification: Φ = same bits (00/11), Ψ = different (01/10)     ║
+║  ├─ |Φ⁺⟩ = (|00⟩+|11⟩)/√2                                            ║
+║  │   → qc.h(0); qc.cx(0,1)  [Just 2 gates!]                          ║
+║  ├─ |Φ⁻⟩ = (|00⟩-|11⟩)/√2                                            ║
+║  │   → qc.x(0); qc.h(0); qc.cx(0,1)                                  ║
+║  ├─ |Ψ⁺⟩ = (|01⟩+|10⟩)/√2                                            ║
+║  │   → qc.h(0); qc.cx(0,1); qc.x(1)                                  ║
+║  └─ |Ψ⁻⟩ = (|01⟩-|10⟩)/√2                                            ║
+║      → qc.x(0); qc.h(0); qc.cx(0,1); qc.x(1)                         ║
 ║                                                                        ║
-║  🎯 STATE PREPARATION                                                  ║
-║  ├─ qc.initialize(state_vector, qubits) - expensive (many gates)     ║
-║  ├─ qc.reset(qubit) - returns to |0⟩                                 ║
-║  └─ qc.barrier() - visual only, NO quantum effect                    ║
+║  🎯 STATE PREPARATION & CIRCUIT CONTROL                                ║
+║  ├─ initialize(state_vector, qubits)                                  ║
+║  │   • Prepares arbitrary quantum state                               ║
+║  │   • Expensive! Synthesizes many gates                              ║
+║  │   • Example: qc.initialize([1/√2, 1/√2], 0) → |+⟩                 ║
+║  ├─ reset(qubit)                                                       ║
+║  │   • Returns qubit to |0⟩ via measurement + conditional X          ║
+║  │   • Mid-circuit operation (active reset)                           ║
+║  └─ barrier()                                                          ║
+║      • Visual separator - NO quantum effect!                          ║
+║      • Blocks transpiler optimization                                  ║
 ║                                                                        ║
-║  🧮 PAULI CLASS (qiskit.quantum_info)                                  ║
-║  ├─ Pauli('X'), Pauli('XYZ') - RIGHT-TO-LEFT order!                  ║
-║  ├─ p1.commutes(p2), p1.anticommutes(p2) - check relations           ║
-║  └─ (p1 @ p2).to_label() - composition → 'iY' for XZ                 ║
+║  🧮 PAULI CLASS (qiskit.quantum_info.Pauli)                            ║
+║  ├─ Algebraic object for calculations (NOT a circuit gate!)           ║
+║  ├─ Creation: Pauli('X'), Pauli('XYZ'), Pauli('iX'), Pauli('-Z')    ║
+║  ├─ ⚠️ RIGHT-TO-LEFT order: 'XYZ' = X⊗Y⊗Z (X on q2, Z on q0!)        ║
+║  ├─ Methods:                                                           ║
+║  │   • p1.commutes(p2) - check if XZ = ZX                            ║
+║  │   • p1.anticommutes(p2) - check if XZ = -ZX                       ║
+║  │   • (p1 @ p2).to_label() - composition (XZ → 'iY')                ║
+║  │   • p.to_matrix() - convert to numpy array                         ║
+║  │   • p.to_instruction() - convert to circuit gate                   ║
+║  │   • p.evolve(HGate()) - conjugation (X → Z under H)               ║
+║  └─ Pauli Algebra:                                                     ║
+║      • XY = iZ, YZ = iX, ZX = iY (cyclic +i)                         ║
+║      • YX = -iZ, ZY = -iX, XZ = -iY (reverse -i)                     ║
+║      • X² = Y² = Z² = I (self-inverse)                               ║
 ║                                                                        ║
-║  📊 KEY IDENTITIES                                                     ║
-║  ├─ H² = I (self-inverse)                                             ║
-║  ├─ HXH = Z, HZH = X (Hadamard conjugation)                          ║
-║  ├─ S² = Z, T⁴ = Z, T² = S                                           ║
-║  ├─ XZ = -ZX (anticommute), XX = I (self-inverse)                    ║
-║  └─ Y = iXZ                                                           ║
+║  📊 KEY IDENTITIES (Must Memorize!)                                    ║
+║  ├─ Hadamard: H² = I, HXH = Z, HZH = X, HYH = -Y                     ║
+║  ├─ Phase: S² = Z, T² = S, T⁴ = Z                                    ║
+║  ├─ Pauli: X² = Y² = Z² = I, Y = iXZ                                 ║
+║  ├─ Commutation: XZ = -ZX (anticommute), XX = I (commute)            ║
+║  ├─ CNOT: CX² = I (self-inverse)                                     ║
+║  └─ Rotation: RX(π) = X, RY(π) = Y, RZ(π) = Z (up to global phase)  ║
 ║                                                                        ║
-║  ⚠️ TOP 5 EXAM TRAPS                                                   ║
-║  1. Z|0⟩ = |0⟩ (unchanged!) - Z only affects |1⟩                     ║
-║  2. CX(control, target) - control comes FIRST!                       ║
-║  3. Pauli('XYZ') = X⊗Y⊗Z - RIGHT-TO-LEFT (X on q2!)                  ║
-║  4. barrier() has NO quantum effect                                   ║
-║  5. S² = Z (not I), T⁴ = Z (not T² = Z)                              ║
+║  ⚠️ TOP 15 EXAM TRAPS (Study These Carefully!)                        ║
+║  1.  Z|0⟩ = |0⟩ (UNCHANGED!) - Z only adds phase to |1⟩             ║
+║  2.  X|+⟩ = |+⟩ (unchanged!) - equal amplitudes swap to same         ║
+║  3.  HXH = Z (NOT X!) - Hadamard swaps X↔Z bases                     ║
+║  4.  S² = Z (NOT I!), T² = S (NOT Z!), T⁴ = Z                       ║
+║  5.  CX(0,1) ≠ CX(1,0) - direction matters! Control FIRST!           ║
+║  6.  CZ(0,1) = CZ(1,0) - CZ IS symmetric (unlike CNOT)               ║
+║  7.  Pauli('XYZ') - RIGHT-TO-LEFT! (X on q2, Y on q1, Z on q0)      ║
+║  8.  X and Z anticommute: XZ = -ZX (NOT XZ = ZX!)                    ║
+║  9.  XY = iY (NOT Y!) - must include i phase factor                  ║
+║  10. Rotation matrix uses θ/2 (half-angle!), not θ directly          ║
+║  11. SWAP = 3 CNOTs (expensive!), not a single gate                  ║
+║  12. Toffoli = 6 CNOTs (very expensive!), not 3                      ║
+║  13. barrier() has ZERO quantum effect - visual only!                 ║
+║  14. initialize() is expensive - synthesizes many gates               ║
+║  15. Y|0⟩ = i|1⟩ (NOT |1⟩!) - Y includes complex phases              ║
+║                                                                        ║
+║  🧠 ESSENTIAL MNEMONICS                                                ║
+║  • "X-Men Flip bits, Z-Men flip Phase"                               ║
+║  • "Hadamard Makes Plus" (H|0⟩ = |+⟩)                                ║
+║  • "S-Squared, T-Fourth" (S²=Z, T⁴=Z)                                ║
+║  • "Control BEFORE Target" (qc.cx parameter order)                    ║
+║  • "CZ is Symmetric" (no control/target)                              ║
+║  • "Phi=same, Psi=different" (Bell state bits)                        ║
+║  • "Three CNOTs to SWAP"                                              ║
+║  • "Pauli RIGHT-TO-LEFT" (tensor order)                               ║
+║  • "Barriers Block optimization, not qubits"                          ║
 ║                                                                        ║
 ╚═══════════════════════════════════════════════════════════════════════╝
 ```

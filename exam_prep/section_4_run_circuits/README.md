@@ -2007,78 +2007,260 @@ with Batch(backend=backend) as batch:
 ### 📚 Concept Checklist
 ```
 □ QiskitRuntimeService is the gateway to IBM Quantum backends
-□ Credentials: save_account() stores token persistently
+□ Credentials: save_account() stores token persistently (only once)
+□ Channels: 'ibm_quantum' for public, 'ibm_cloud' for enterprise
 □ Backend selection: service.backend('name') or service.least_busy()
+□ Backend methods: service.backends() lists all available backends
 □ Transpilation converts abstract circuits to hardware-executable form
+□ Virtual qubits (q[0] in code) map to physical qubits (actual hardware)
+□ Abstract gates (H, T) translate to hardware basis gates (RZ, SX)
 □ 6-stage pipeline: Init → Layout → Routing → Translation → Optimization → Scheduling
+□ Layout stage: Maps virtual qubits to physical qubit positions
+□ Routing stage: Inserts SWAP gates for non-adjacent operations
+□ Translation stage: Converts to backend's basis gates only
 □ optimization_level: 0=debug, 1=fast, 2=default, 3=best
+□ Higher optimization means slower compilation but better circuits
+□ Transpilation is non-deterministic (different runs → different circuits)
+□ PassManager: Custom pass management for fine-grained control
+□ Layout methods: 'trivial', 'dense', 'sabre' (default)
+□ Routing methods: 'basic', 'stochastic', 'sabre' (default)
+□ generate_preset_pass_manager() creates staged pass managers
 □ resilience_level: 0=none, 1=M3 mitigation, 2=M3+ZNE
-□ Session mode: reserved access for iterative algorithms (VQE)
+□ M3 = Matrix-free Measurement mitigation (readout error correction)
+□ ZNE = Zero-Noise Extrapolation (estimates ideal result)
+□ Session mode: reserved access for iterative algorithms (VQE, QAOA)
+□ Sessions prevent re-queuing between iterations (max_time parameter)
 □ Batch mode: parallel execution for independent circuits
-□ Job mode: single submission (default)
+□ Job mode: single submission (default, simplest)
+□ mode= parameter (v0.24.0+): takes backend, Session, or Batch object
 □ JobStatus flow: INITIALIZING → QUEUED → VALIDATING → RUNNING → DONE
+□ Final states: DONE (success), ERROR (failed), CANCELLED (stopped)
+□ Job retrieval: service.job(job_id) retrieves by unique ID
+□ PrimitiveResult: Top-level container holding PubResult objects
+□ PubResult: One result per PUB (Primitive Unified Bloc)
+□ DataBin: Contains actual data (evs, stds, meas, etc.)
 □ Backend V2 API: target object consolidates all hardware info
-□ T1 = relaxation time (energy decay), T2 = dephasing time (coherence loss)
-□ Physical constraint: T2 ≤ 2×T1 (always true!)
+□ V1 API deprecated: configuration(), properties(), defaults()
+□ V2 replaces scattered methods with unified target interface
+□ T1 = relaxation time (energy decay, like battery life)
+□ T2 = dephasing time (coherence loss, like clock drift)
+□ Physical constraint: T2 ≤ 2×T1 (always true - fundamental physics!)
+□ Circuit duration rule: Should be <10% of T2 for reliable results
+□ Qubit frequency: Unique resonant frequency per qubit (~5 GHz)
 □ Coupling map = connectivity graph for 2-qubit gates
+□ Coupling maps are directional: [0,1] doesn't imply [1,0]
+□ Distance metric: Minimum hops between qubits in coupling graph
 □ SWAP gate = 3 CNOTs (expensive routing overhead)
+□ Routing overhead: Each SWAP ≈ 3% error accumulation
 □ BitArray: get_counts() returns string keys, get_int_counts() returns int keys
+□ Little-endian bit ordering: q[0] is rightmost bit in string
+□ Multiple registers: Each ClassicalRegister becomes separate DataBin attribute
 □ Broadcasting: parameter/observable shapes must be compatible
+□ NumPy-style broadcasting: Same shape or one dimension is 1
+□ Outer product broadcasting: (M,1) × (1,N) → (M,N) result
+□ Zip broadcasting: (N,) × (N,) → (N,) paired results
+□ Primitives auto-transpile: Manual transpilation optional for control
+□ apply_layout(): Must remap observables after manual transpilation
 ```
 
 ### 💻 Code Pattern Checklist
 ```
+□ from qiskit_ibm_runtime import QiskitRuntimeService imports service
 □ service = QiskitRuntimeService() connects to IBM Quantum
 □ QiskitRuntimeService.save_account(channel='ibm_quantum', token='...') saves credentials
+□ QiskitRuntimeService.save_account(channel='ibm_quantum', token='...', overwrite=True) updates credentials
 □ backend = service.backend('ibm_brisbane') selects specific backend
-□ backend = service.least_busy(simulator=False) selects best available
+□ backend = service.least_busy(simulator=False, min_num_qubits=5) selects best available
+□ backends = service.backends() lists all available backends
+□ for backend in backends: print(f"{backend.name}: {backend.num_qubits} qubits") iterates backends
+□ from qiskit import transpile imports transpilation function
 □ transpiled = transpile(qc, backend, optimization_level=3) compiles circuit
 □ transpile(..., seed_transpiler=42) ensures reproducibility
+□ transpile(..., basis_gates=['cx', 'rz', 'sx']) overrides basis gates
+□ transpile(..., coupling_map=custom_map) overrides connectivity
+□ transpile(..., initial_layout=[0,1,2]) manually maps virtual→physical qubits
+□ print(f"Original: {qc.depth()}, Transpiled: {transpiled.depth()}") compares depths
+□ from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager imports PassManager
+□ pm = generate_preset_pass_manager(optimization_level=2, backend=backend) creates PassManager
+□ transpiled = pm.run(circuit) runs PassManager on circuit
+□ from qiskit_ibm_runtime import Session imports Session context
 □ with Session(backend=backend) as session: creates session context
+□ with Session(backend=backend, max_time="1h") as session: sets max session time
+□ from qiskit_ibm_runtime import Batch imports Batch context
+□ with Batch(backend=backend) as batch: creates batch context
+□ from qiskit_ibm_runtime import SamplerV2 as Sampler imports Sampler primitive
+□ from qiskit_ibm_runtime import EstimatorV2 as Estimator imports Estimator primitive
+□ sampler = Sampler(mode=backend) creates Sampler in Job mode
 □ sampler = Sampler(mode=session) attaches primitive to session
+□ estimator = Estimator(mode=batch) attaches primitive to batch
+□ from qiskit_ibm_runtime import Options imports Options class
 □ options = Options() creates configuration object
 □ options.optimization_level = 3 sets optimization (NOT options.transpilation.optimization_level)
-□ options.resilience_level = 1 enables M3 mitigation
-□ options.execution.shots = 8192 sets measurement count
-□ job.status() returns JobStatus enum
-□ job.done() returns True when complete
-□ result = job.result() blocks until complete, returns PrimitiveResult
-□ service.job(job_id) retrieves job by ID
-□ target = backend.target accesses V2 hardware info
-□ target.operation_names returns basis gates list
-□ target.instruction_supported('cx', (0, 1)) checks gate availability
-□ target.qubit_properties[0].t1 / .t2 / .frequency returns qubit properties
-□ coupling_map = target.build_coupling_map() gets connectivity
-□ result[0].data.meas returns BitArray (Sampler)
-□ result[0].data.evs returns expectation values (Estimator)
-□ bit_array.get_counts() returns {'00': 512, '11': 512}
-□ bit_array.get_int_counts() returns {0: 512, 3: 512}
-□ observable.apply_layout(transpiled.layout) remaps after transpilation
+
 ```
 
 ### ⚠️ Exam Trap Checklist
 ```
-□ TRAP: Using QiskitRuntimeService() without save_account() first
-□ TRAP: Assuming transpile() is deterministic (use seed_transpiler!)
-□ TRAP: Manual transpilation before primitives (they auto-transpile)
-□ TRAP: options.transpilation.optimization_level (wrong path!)
-  → Use: options.optimization_level
-□ TRAP: Estimator(session=session) is DEPRECATED
-  → Use: Estimator(mode=session)
-□ TRAP: Calling job.result() without checking job.done()
-□ TRAP: Using V1 API: backend.configuration().basis_gates
-  → Use V2: backend.target.operation_names
-□ TRAP: Assuming T2 can exceed 2×T1 (impossible!)
-□ TRAP: Not remapping observable after transpilation
-  → Use: obs.apply_layout(transpiled.layout)
+□ TRAP: QiskitRuntimeService() without save_account() first
+  → WRONG! Must call save_account() ONCE before using service
+  → "SAVE before SERVE" - credentials required first
+□ TRAP: Thinking transpile() is deterministic
+  → WRONG! Same circuit → different results each run
+  → Must use seed_transpiler=42 for reproducibility
+□ TRAP: Using session=session in Runtime v0.24.0+
+  → WRONG! New API uses mode=session (NOT session=session)
+  → mode= parameter replaces old session= parameter
+□ TRAP: options.transpilation.optimization_level = 3
+  → WRONG! Correct is options.optimization_level = 3
+  → No .transpilation intermediate attribute
+□ TRAP: Thinking T2 can be > 2×T1
+  → WRONG! T2 ≤ 2×T1 is physics law (ALWAYS true)
+  → If exam shows T2 > 2×T1, it's a trap question!
+□ TRAP: Thinking SWAP is a native gate
+  → WRONG! SWAP decomposes to 3 CNOTs on hardware
+  → Each SWAP adds ~3% error - routing is EXPENSIVE!
 □ TRAP: Assuming coupling map is bidirectional
-  → Check both [0,1] and [1,0] directions
-□ TRAP: Treating SWAP as cheap (it's 3 CNOTs!)
-□ TRAP: Incompatible broadcast shapes for params/observables
-□ TRAP: Using data.counts instead of data.meas or register name
-□ TRAP: Confusing get_counts() (strings) vs get_int_counts() (ints)
-□ TRAP: Assuming q[0] is leftmost bit (it's rightmost - little-endian!)
-□ TRAP: Higher optimization_level always better (sometimes slower, not better)
+  → WRONG! [0,1] doesn't imply [1,0] exists
+  → CX(0,1) supported ≠ CX(1,0) supported (directional!)
+□ TRAP: Using backend.configuration() in V2 API
+  → WRONG! V1 methods deprecated: configuration(), properties(), defaults()
+  → Use backend.target for all hardware info (V2 API)
+□ TRAP: Getting basis gates via configuration.basis_gates
+  → WRONG! V2 API uses target.operation_names
+  → target object is the unified interface
+□ TRAP: Forgetting apply_layout() after manual transpilation
+  → Observable needs remapping: observable.apply_layout(transpiled.layout)
+  → Circuit auto-maps, but observables don't!
+□ TRAP: Calling job.result() immediately after submit
+  → Job starts in INITIALIZING, not DONE
+  → Check job.done() or job.status() first to avoid blocking
+□ TRAP: Thinking data.counts exists in result
+  → WRONG! It's data.meas or data.<register_name>
+  → Then call .get_counts() on the BitArray
+□ TRAP: Expecting q[0] to be leftmost bit in counts
+  → WRONG! Little-endian: q[0] is RIGHTMOST bit
+  → '01' means q[0]=1 (right), q[1]=0 (left)
+□ TRAP: Thinking optimization_level 3 is always faster
+  → WRONG! Level 3 is SLOWER to compile but produces better circuits
+  → Higher level = slower compilation, better optimization
+□ TRAP: Using Session for independent parallel circuits
+  → WRONG! Session is for sequential/iterative (VQE, QAOA)
+  → Use Batch for independent parallel executions
+□ TRAP: Using Batch for VQE optimization loop
+  → WRONG! Batch is for independent circuits
+  → Session maintains reserved access for iterative algorithms
+□ TRAP: Thinking circuit duration can equal T2
+  → WRONG! 10% rule: circuit time should be < 10% of T2
+  → If circuit_time ≈ T2, expect massive decoherence errors
+□ TRAP: Forgetting resilience level adds overhead
+  → Level 0: No overhead (raw results)
+  → Level 1: ~20% overhead (M3 mitigation)
+  → Level 2: 3-5× overhead (M3 + ZNE extrapolation)
+□ TRAP: Using incompatible broadcast shapes (5,) and (3,)
+  → WRONG! Shapes must be compatible: same or one is 1
+  → Reshape to (1,5) and (3,1) for outer product
+□ TRAP: Thinking primitives require manual transpilation
+  → Primitives auto-transpile internally!
+  → Manual transpilation optional (gives control but not required)
+□ TRAP: Mixing up Layout methods
+  → 'trivial': q[i] → physical[i] (simple mapping)
+  → 'dense': Uses most connected qubits (for dense circuits)
+  → 'sabre': Smart search-based mapping (default, best for most)
+□ TRAP: Mixing up Routing methods
+  → 'basic': Greedy SWAP insertion (fast but suboptimal)
+  → 'stochastic': Randomized routing (can be good with retries)
+  → 'sabre': Smart routing algorithm (default, usually best)
+□ TRAP: Thinking optimization stages can be skipped
+  → 6-stage pipeline is SEQUENTIAL
+  → Init → Layout → Routing → Translation → Opt → Scheduling
+  → Each stage depends on previous stages (ILRTOS order)
+□ TRAP: Confusing Job, Batch, Session use cases
+  → Job: Single circuit, simplest (testing, debugging)
+  → Batch: Multiple independent circuits (parameter sweeps, benchmarks)
+  → Session: Sequential dependent circuits (VQE, QAOA iterations)
+□ TRAP: Using service.job() without job ID
+  → WRONG! Must provide job_id: service.job('job_id_string')
+  → Get job_id from job.job_id() after submission
+□ TRAP: Thinking JobStatus.DONE is the only completion state
+  → WRONG! Final states: DONE (success), ERROR (failed), CANCELLED (stopped)
+  → Always check which final state before accessing results
+□ TRAP: Accessing result attributes before checking job.done()
+  → May block indefinitely or raise error
+  → Always check job.status() or job.done() first
+□ TRAP: Thinking T1 and T2 are gate-specific properties
+  → WRONG! T1/T2 are QUBIT properties (not gate properties)
+  → Gates have error rates and durations; qubits have T1/T2
+□ TRAP: Using target['cx'][0].error (missing second qubit)
+  → WRONG! 2-qubit gates need tuple: target['cx'][(0,1)].error
+  → Single-qubit: target['sx'][0].error (just qubit index)
+□ TRAP: Thinking frequency is same for all qubits
+  → WRONG! Each qubit has unique resonant frequency (~5 GHz)
+  → Frequency diversity enables selective control
+□ TRAP: Confusing coupling_map edges with undirected graph
+  → Coupling map is DIRECTED (arrows matter!)
+  → [[0,1], [1,0]] means bidirectional; [[0,1]] means one-way only
+□ TRAP: Thinking distance(i,j) counts physical distance
+  → WRONG! distance(i,j) = minimum HOPS in coupling graph
+  → Not physical chip distance - graph theoretical distance
+□ TRAP: Forgetting each hop needs a SWAP (3 CNOTs)
+  → distance=3 means 3 SWAPs = 9 CNOTs total!
+  → Routing overhead grows quickly with distance
+□ TRAP: Using result[0].data directly as counts
+  → result[0].data is a DataBin, not counts
+  → Must access: result[0].data.meas.get_counts()
+□ TRAP: Thinking multiple ClassicalRegisters merge into one result
+  → WRONG! Each register becomes separate DataBin attribute
+  → ClassicalRegister(2, 'alpha') → data.alpha
+  → ClassicalRegister(3, 'beta') → data.beta
+□ TRAP: Using get_counts() expecting integer keys
+  → get_counts() returns STRING keys: {'00': 512, '11': 512}
+  → Use get_int_counts() for INTEGER keys: {0: 512, 3: 512}
+□ TRAP: Thinking BitArray.slice_bits() uses shot indices
+  → WRONG! slice_bits() selects qubit indices
+  → slice_shots() selects shot indices
+  → bit_array.slice_bits([0,1]) = select qubits 0 and 1
+□ TRAP: Forgetting to check simulator vs real backend
+  → service.least_busy() may return simulator if available
+  → Use simulator=False to force real hardware selection
+□ TRAP: Assuming backend.num_qubits means all usable
+  → Some qubits may be down for calibration
+  → Check target.instruction_supported() for specific gates
+□ TRAP: Using initial_layout without understanding implications
+  → Manual layout skips Layout stage of transpilation
+  → May produce worse results than automatic 'sabre' layout
+□ TRAP: Thinking basis_gates parameter adds to backend gates
+  → WRONG! basis_gates REPLACES backend's native gates
+  → Only use to override/restrict gate set, not extend it
+□ TRAP: Confusing optimization_level in transpile() vs Options
+  → transpile(qc, backend, optimization_level=3) - compilation
+  → options.optimization_level = 3 - for primitives (different!)
+□ TRAP: Thinking PassManager and transpile() are the same
+  → transpile() is convenience function (simple cases)
+  → PassManager is for advanced control (custom pass sequences)
+□ TRAP: Using max_time without units in Session
+  → WRONG! Must specify: max_time="1h" or "30m" (string with units)
+  → Not max_time=3600 (no integer seconds)
+□ TRAP: Thinking Sessions prevent all queuing
+  → Sessions reserve access but still queue initially
+  → Benefit is no re-queuing BETWEEN jobs in session
+□ TRAP: Forgetting dynamical_decoupling needs idle time
+  → DD only helps if circuit has idle periods
+  → Dense circuits with no gaps get no DD benefit
+□ TRAP: Assuming higher shots always better
+  → Shots vs cost tradeoff: shots beyond 4096 rarely worth it
+  → Statistical benefit scales with √shots (diminishing returns)
+□ TRAP: Thinking job.cancel() immediately stops execution
+  → Cancel request may not work if job already RUNNING
+  → Can only cancel QUEUED/VALIDATING jobs reliably
+□ TRAP: Using timeout without handling the timeout exception
+  → job.result(timeout=300) raises JobTimeoutError if exceeded
+  → Always wrap in try/except when using timeout
+□ TRAP: Mixing V1 and V2 primitive APIs
+  → SamplerV1 vs SamplerV2 have different interfaces
+  → V2 uses PUB tuples, V1 uses separate circuit/parameter lists
+□ TRAP: Thinking apply_layout() is automatic for observables
+  → WRONG! Circuit layout is applied automatically
+  → Observables need MANUAL remapping with apply_layout()
 ```
 
 ### 🧠 Mnemonic Recall Box
@@ -2145,60 +2327,178 @@ with Batch(backend=backend) as batch:
 ║                      (15% of Exam - ~10 Questions)                     ║
 ╠═══════════════════════════════════════════════════════════════════════╣
 ║                                                                        ║
-║  🔌 RUNTIME SERVICE                                                    ║
-║  ├─ save_account() first, then QiskitRuntimeService()                 ║
-║  ├─ backend = service.backend('ibm_brisbane')                         ║
-║  └─ backend = service.least_busy(simulator=False)                     ║
+║  🔌 RUNTIME SERVICE (Authentication & Backend Access)                  ║
+║  ├─ QiskitRuntimeService.save_account(token='...', overwrite=True)    ║
+║  │   → Must save credentials ONCE before using service                ║
+║  ├─ service = QiskitRuntimeService()  → Connect to IBM Quantum        ║
+║  ├─ backend = service.backend('ibm_brisbane')  → Specific backend     ║
+║  ├─ backend = service.least_busy(simulator=False, min_num_qubits=5)   ║
+║  │   → Auto-select best available backend                             ║
+║  └─ backends = service.backends()  → List all available backends      ║
 ║                                                                        ║
-║  ⚙️ TRANSPILATION                                                      ║
+║  ⚙️ TRANSPILATION (Circuit → Hardware Conversion)                      ║
 ║  ├─ transpile(qc, backend, optimization_level=3, seed_transpiler=42)  ║
-║  ├─ Pipeline: Init → Layout → Routing → Translation → Opt → Sched     ║
-║  ├─ Level 0: Debug │ Level 1: Fast │ Level 2: Default │ Level 3: Best ║
-║  └─ NOT deterministic without seed_transpiler!                        ║
+║  │   → Converts abstract gates to hardware basis gates                ║
+║  ├─ 6-Stage Pipeline: Init → Layout → Routing → Translation →         ║
+║  │                    Optimization → Scheduling (ILRTOS)              ║
+║  ├─ Layout: Maps virtual qubits (q[0]) → physical qubits (chip)       ║
+║  ├─ Routing: Inserts SWAP gates for non-adjacent qubits               ║
+║  ├─ Translation: Converts to basis gates (e.g., H → RZ+SX)            ║
+║  ├─ Optimization Levels:                                              ║
+║  │   • Level 0: Debug (no optimization, just translation)             ║
+║  │   • Level 1: Fast (light optimization, quick compile)              ║
+║  │   • Level 2: Default (balanced quality vs speed)                   ║
+║  │   • Level 3: Best (aggressive, slowest but best quality)           ║
+║  ├─ PassManager: generate_preset_pass_manager(level, backend)         ║
+║  │   → Fine-grained control over transpilation stages                 ║
+║  ├─ Layout methods: 'trivial', 'dense', 'sabre' (default)             ║
+║  ├─ Routing methods: 'basic', 'stochastic', 'sabre' (default)         ║
+║  └─ ⚠️ NOT deterministic without seed_transpiler!                      ║
 ║                                                                        ║
-║  📋 OPTIONS                                                            ║
-║  ├─ options.optimization_level = 3  (NOT transpilation.opt...)        ║
-║  ├─ options.resilience_level = 1  (0=none, 1=M3, 2=M3+ZNE)           ║
-║  └─ options.execution.shots = 4096                                    ║
+║  📋 OPTIONS (Execution Configuration)                                  ║
+║  ├─ options = Options()  → Create configuration object                ║
+║  ├─ options.optimization_level = 3  (0-3)                             ║
+║  │   ⚠️ NOT options.transpilation.optimization_level!                 ║
+║  ├─ options.resilience_level = 1  (0-2)                               ║
+║  │   • Level 0: No error mitigation (fastest, raw results)            ║
+║  │   • Level 1: M3 measurement mitigation (~20% overhead)             ║
+║  │   • Level 2: M3 + ZNE zero-noise extrapolation (3-5× overhead)     ║
+║  ├─ options.execution.shots = 4096  → Measurement repetitions         ║
+║  │   • 1024: Minimum for reasonable statistics                        ║
+║  │   • 4096: Standard production value                                ║
+║  │   • 8192+: High precision experiments                              ║
+║  ├─ options.dynamical_decoupling.enable = True                        ║
+║  │   → Inserts DD sequences during idle times                         ║
+║  └─ sampler = Sampler(backend=backend, options=options)               ║
 ║                                                                        ║
-║  🔄 EXECUTION MODES                                                    ║
-║  ├─ Job: Single submission (default)                                  ║
-║  ├─ Batch: Parallel independent circuits                              ║
-║  └─ Session: Reserved access for iterative (VQE) - mode=session       ║
+║  🔄 EXECUTION MODES (Job/Batch/Session)                                ║
+║  ├─ Job Mode: Sampler(mode=backend)                                   ║
+║  │   • Single circuit submission                                      ║
+║  │   • Direct execution, simplest approach                            ║
+║  │   • Best for: Testing, debugging, one-off measurements             ║
+║  ├─ Batch Mode: with Batch(backend=backend) as batch:                 ║
+║  │   • Multiple independent circuits executed in parallel             ║
+║  │   • Backend optimizes execution order for efficiency               ║
+║  │   • Best for: Parameter sweeps, benchmarking, comparisons          ║
+║  ├─ Session Mode: with Session(backend=backend, max_time="1h"):       ║
+║  │   • Reserved QPU access for sequential jobs                        ║
+║  │   • No re-queuing between iterations                               ║
+║  │   • Best for: VQE, QAOA, iterative algorithms with feedback        ║
+║  └─ mode= parameter (v0.24.0+): Estimator(mode=session)               ║
+║      ⚠️ OLD: session=session is DEPRECATED!                           ║
 ║                                                                        ║
-║  📊 JOB STATUS FLOW                                                    ║
-║  INITIALIZING → QUEUED → VALIDATING → RUNNING → DONE/ERROR/CANCELLED ║
-║  └─ Check job.done() before job.result()                              ║
+║  📊 JOB STATUS & LIFECYCLE                                             ║
+║  ├─ JobStatus Flow: INITIALIZING → QUEUED → VALIDATING → RUNNING     ║
+║  │   Final states: DONE (success) | ERROR (failed) | CANCELLED        ║
+║  ├─ job.status()  → Returns current JobStatus enum                    ║
+║  ├─ job.done()  → Returns True when job complete                      ║
+║  ├─ job.result()  → Blocks until complete, returns PrimitiveResult    ║
+║  ├─ job.result(timeout=300)  → 5-minute timeout to prevent hanging    ║
+║  ├─ job_id = job.job_id()  → Get unique identifier                    ║
+║  └─ service.job(job_id)  → Retrieve job by ID (even days later!)      ║
 ║                                                                        ║
-║  🎯 BACKEND TARGET (V2)                                                ║
-║  ├─ target = backend.target (NOT backend.configuration()!)            ║
-║  ├─ target.operation_names → basis gates                              ║
-║  ├─ target.instruction_supported('cx', (0,1)) → availability          ║
-║  ├─ target.qubit_properties[i].t1, .t2, .frequency                    ║
-║  └─ target.build_coupling_map() → connectivity                        ║
+║  📦 RESULT STRUCTURE (PrimitiveResult → PubResult → DataBin)          ║
+║  ├─ result = job.result()  → PrimitiveResult (top container)          ║
+║  ├─ pub_result = result[0]  → First PubResult (one per PUB)           ║
+║  ├─ data = pub_result.data  → DataBin (actual measurement data)       ║
+║  ├─ SAMPLER Results:                                                   ║
+║  │   • data.meas  → BitArray (default register from measure_all())    ║
+║  │   • data.<name>  → BitArray (named ClassicalRegister)              ║
+║  │   • bit_array.get_counts()  → {'00': 512, '11': 512} (strings)     ║
+║  │   • bit_array.get_int_counts()  → {0: 512, 3: 512} (integers)      ║
+║  │   • bit_array.get_bitstrings()  → ['00', '11', ...] (all shots)    ║
+║  │   • bit_array.slice_bits([0,1])  → Extract specific qubits         ║
+║  │   • bit_array.slice_shots(range(100))  → First 100 shots           ║
+║  ├─ ESTIMATOR Results:                                                 ║
+║  │   • data.evs  → np.array of expectation values ⟨O⟩                  ║
+║  │   • data.stds  → np.array of standard deviations                   ║
+║  └─ ⚠️ Little-endian: '01' means q[0]=1 (rightmost), q[1]=0 (left)    ║
 ║                                                                        ║
-║  ⏱️ QUBIT PROPERTIES                                                   ║
-║  ├─ T1: Energy relaxation time (~100μs)                               ║
-║  ├─ T2: Phase coherence time (T2 ≤ 2×T1 ALWAYS!)                      ║
-║  └─ Rule: Circuit time < 10% of T2 for reliable results               ║
+║  🎯 BACKEND TARGET (V2 API - Unified Hardware Interface)               ║
+║  ├─ target = backend.target  → Unified hardware info (V2 API)         ║
+║  │   ⚠️ V1 DEPRECATED: backend.configuration(), .properties()         ║
+║  ├─ target.operation_names  → ['cx', 'rz', 'sx', ...] basis gates     ║
+║  ├─ target.instruction_supported('cx', (0, 1))  → True/False          ║
+║  ├─ Gate Properties:                                                   ║
+║  │   • target['cx'][(0, 1)].error  → Error rate (e.g., 0.012 = 1.2%) ║
+║  │   • target['cx'][(0, 1)].duration  → Gate time (in dt units)       ║
+║  ├─ Qubit Properties:                                                  ║
+║  │   • target.qubit_properties[i].t1  → Relaxation time (~100μs)      ║
+║  │   • target.qubit_properties[i].t2  → Dephasing time (≤2×T1!)       ║
+║  │   • target.qubit_properties[i].frequency  → Resonance (~5 GHz)     ║
+║  └─ coupling_map = target.build_coupling_map()  → Connectivity graph  ║
 ║                                                                        ║
-║  🗺️ COUPLING MAPS                                                      ║
-║  ├─ Defines which qubits can do 2-qubit gates directly                ║
-║  ├─ Direction matters! [0,1] ≠ [1,0]                                  ║
-║  └─ SWAP = 3 CNOTs (routing is expensive!)                            ║
+║  ⏱️ QUBIT PROPERTIES & COHERENCE                                       ║
+║  ├─ T1 (Relaxation): Energy decay time, like "battery life"           ║
+║  │   → How long |1⟩ state persists before decaying to |0⟩             ║
+║  ├─ T2 (Dephasing): Phase coherence time, like "clock accuracy"       ║
+║  │   → How long superposition maintains phase relationship            ║
+║  ├─ ⚠️ CRITICAL CONSTRAINT: T2 ≤ 2×T1 (ALWAYS - physics law!)          ║
+║  │   → If exam shows T2 > 2×T1, it's a TRAP question!                 ║
+║  ├─ 10% Rule: Circuit execution time should be < 10% of T2            ║
+║  │   → Example: T2=100μs → circuit should finish in <10μs             ║
+║  └─ Frequency: Each qubit's resonant frequency for selective control  ║
 ║                                                                        ║
-║  📦 RESULTS                                                            ║
-║  ├─ Sampler: result[0].data.meas → BitArray                           ║
-║  ├─ Estimator: result[0].data.evs → expectation values                ║
-║  ├─ get_counts() → {'00': 512, '11': 512}                             ║
-║  └─ get_int_counts() → {0: 512, 3: 512}                               ║
+║  🗺️ COUPLING MAPS (Qubit Connectivity)                                 ║
+║  ├─ Coupling map = directed graph of allowed 2-qubit gates            ║
+║  ├─ coupling_map.get_edges()  → [[0,1], [1,0], [1,2], ...] edges     ║
+║  ├─ coupling_map.distance(i, j)  → Minimum hops between qubits        ║
+║  ├─ ⚠️ Direction matters! [0,1] doesn't imply [1,0] exists            ║
+║  │   → CX(0,1) supported ≠ CX(1,0) supported                          ║
+║  ├─ SWAP decomposition: SWAP = 3 CNOTs                                ║
+║  │   → SWAP(0,2) = CX(0,2) + CX(2,0) + CX(0,2)                        ║
+║  │   → Each SWAP ≈ 3% error accumulation!                             ║
+║  └─ Routing overhead: Can double/triple circuit depth on linear chips ║
 ║                                                                        ║
-║  ⚠️ TOP 5 EXAM TRAPS                                                   ║
-║  1. transpile() is NOT deterministic (use seed_transpiler)            ║
-║  2. mode=session (NOT session=session) for Runtime v0.24.0+           ║
-║  3. options.optimization_level (NOT options.transpilation...)         ║
-║  4. T2 ≤ 2×T1 (ALWAYS - physics constraint!)                          ║
-║  5. SWAP = 3 CNOTs (routing adds significant overhead)                ║
+║  📡 BROADCASTING (Parameter/Observable Arrays)                         ║
+║  ├─ NumPy-style shape compatibility rules apply                       ║
+║  ├─ Pattern 1: Single observable, multiple params                     ║
+║  │   • Observable: shape () or (1,), Params: shape (N,)               ║
+║  │   • Result: (N,) expectation values                                ║
+║  ├─ Pattern 2: Zip (one-to-one pairing)                               ║
+║  │   • Observables: (N,), Params: (N,) - same length                  ║
+║  │   • Result: (N,) paired evaluations                                ║
+║  ├─ Pattern 3: Outer product (all combinations)                       ║
+║  │   • Observables: (M,1), Params: (1,N)                              ║
+║  │   • Result: (M,N) matrix of all M×N combinations                   ║
+║  └─ ⚠️ Incompatible: (5,) and (3,) - reshape to (1,5) and (3,1)       ║
+║                                                                        ║
+║  🔧 ADVANCED TOPICS                                                    ║
+║  ├─ observable.apply_layout(transpiled.layout)                        ║
+║  │   → CRITICAL: Remap observable after manual transpilation          ║
+║  │   → Circuit auto-maps, but observables need manual remapping!      ║
+║  ├─ Primitives auto-transpile internally                              ║
+║  │   → Manual transpilation optional (gives control but not required) ║
+║  └─ Multiple ClassicalRegisters: Each becomes data.<register_name>    ║
+║      → ClassicalRegister(2, 'alpha') → data.alpha.get_counts()        ║
+║                                                                        ║
+║  ⚠️ TOP 15 EXAM TRAPS (MEMORIZE!)                                      ║
+║  1.  transpile() NOT deterministic → use seed_transpiler=42           ║
+║  2.  mode=session (NOT session=session) for Runtime v0.24.0+          ║
+║  3.  options.optimization_level (NOT options.transpilation.opt...)    ║
+║  4.  T2 ≤ 2×T1 (ALWAYS - if T2 > 2×T1 in exam, it's a trap!)          ║
+║  5.  SWAP = 3 CNOTs (routing is EXPENSIVE, ~3% error per SWAP)        ║
+║  6.  save_account() BEFORE QiskitRuntimeService() - "SAVE before SERVE"║
+║  7.  V2 API: target.operation_names (NOT configuration().basis_gates) ║
+║  8.  apply_layout() for observables after transpilation               ║
+║  9.  Coupling map is DIRECTIONAL: [0,1] ≠ [1,0]                       ║
+║  10. Check job.done() BEFORE job.result() to avoid blocking           ║
+║  11. Little-endian: q[0] is RIGHTMOST bit ('01' = q[0]=1, q[1]=0)     ║
+║  12. data.meas or data.<name>, NOT data.counts                        ║
+║  13. Higher opt level NOT always better (level 3 slower but usually best)║
+║  14. Session for iterative (VQE), Batch for parallel (param sweeps)   ║
+║  15. Primitives auto-transpile (manual transpilation gives control)    ║
+║                                                                        ║
+║  🧠 ESSENTIAL MNEMONICS                                                ║
+║  • "ILRTOS" = Init, Layout, Routing, Translation, Opt, Scheduling     ║
+║  • "0=Zero, 1=One, 2=Two-way, 3=Three+" = Optimization levels         ║
+║  • "ORS" = Options: Optimization, Resilience, Shots                   ║
+║  • "JBS" = Job (single), Batch (parallel), Session (sequential)       ║
+║  • "T2 ≤ Two Times T1" = Fundamental physics constraint               ║
+║  • "SWAP = 3 CX" = Routing cost                                       ║
+║  • "SAVE before SERVE" = save_account() then QiskitRuntimeService()   ║
+║  • "TARGET" = Timing, Availability, Reliability, Geometry, Environment║
+║  • "mode is Modern" = Use mode=, not session= parameter               ║
 ║                                                                        ║
 ╚═══════════════════════════════════════════════════════════════════════╝
 ```
