@@ -1,6 +1,6 @@
 # Qiskit Certification Exam Preparation Guide
 
-> **Complete study materials for the IBM Certified Associate Developer - Quantum Computation using Qiskit v1.x certification**
+> **Complete study materials for the IBM Certified Associate Developer - Quantum Computation using Qiskit v2.x certification**
 
 ---
 
@@ -9,12 +9,11 @@
 This folder contains comprehensive study materials organized to help you master all nine domains of the Qiskit certification exam. The materials combine **conceptual understanding** with **hands-on coding practice**, following a proven learning methodology that balances theory with practical application.
 
 ### Certification Details
-- **Exam**: IBM Certified Associate Developer - Quantum Computation using Qiskit v1.x
+- **Exam**: IBM Certified Associate Developer - Quantum Computation using Qiskit v2.x
 - **Format**: 60 questions, 90 minutes
 - **Passing Score**: 70% (42/60 correct)
 - **Prerequisites**: Python programming, basic linear algebra
-- **Qiskit Version**: v1.x (current as of January 2026)
-
+- **Qiskit Version**: v2.x (current as of January 2026)
 ---
 
 ## 🗂️ Folder Structure
@@ -328,13 +327,13 @@ Test your understanding with:
 - When to use Job vs Batch vs Session modes
 - Transpiler optimization levels
 - Backend properties: basis gates, coupling map, noise
-- `mode=` parameter for Sampler/Estimator (v1.x syntax)
+- `mode=` parameter for Sampler/Estimator (v2.x syntax)
 
 **Common traps**:
 - ⚠️ **Session for VQE/QAOA** (feedback loops)
 - ⚠️ **Batch for parameter sweeps** (independent circuits)
 - ⚠️ **Job for single tests** (simplest)
-- Deprecated `session=` parameter (use `mode=` in v1.x)
+- Deprecated `session=` parameter (use `mode=` in v2.x)
 - Transpilation changes circuit depth and gate count
 
 ---
@@ -475,7 +474,7 @@ Test your understanding with:
 ## 🎓 Study Tips
 
 ### Before You Start
-1. **Install Qiskit v1.x**: `pip install qiskit qiskit-ibm-runtime`
+1. **Install Qiskit v2.x**: `pip install qiskit qiskit-ibm-runtime`
 2. **Set up Jupyter**: `pip install jupyter matplotlib`
 3. **Clone this repo**: Have all materials locally
 4. **Create IBM Quantum account**: Free access to simulators
@@ -528,7 +527,7 @@ Study Phase:
 □ Understand V2 API: mode=, PUBs, result indexing
 
 Technical Setup:
-□ Qiskit v1.x installed and tested
+□ Qiskit v2.x installed and tested
 □ IBM Quantum account created
 □ Can run notebooks without errors
 □ Understand backend selection
