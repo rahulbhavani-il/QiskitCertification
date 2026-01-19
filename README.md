@@ -19,7 +19,7 @@ This folder contains comprehensive study materials organized to help you master 
 ## 🗂️ Folder Structure
 
 ```
-exam_prep/
+QiskitCertification/
 ├── README.md                              # This file - your study guide navigation
 ├── requirements.txt                       # Python dependencies for all notebooks
 │
@@ -43,13 +43,21 @@ exam_prep/
 │
 ├── section_3_create_circuits/             # 12% of exam (~8 questions)
 │   ├── README.md                          # Circuit construction patterns
-│   └── [circuit building notebooks]       # Code Labs: compose, append, barriers
+│   ├── circuit_basics.ipynb               # Code Lab: QuantumCircuit fundamentals
+│   ├── circuit_composition.ipynb          # Code Lab: compose(), append(), combine
+│   ├── parameterized_circuits.ipynb       # Code Lab: Parameter binding
+│   ├── circuit_library.ipynb              # Code Lab: Standard circuits
+│   ├── classical_control.ipynb            # Code Lab: if_test, classical bits
+│   └── dynamic_circuits.ipynb             # Code Lab: Mid-circuit measurements
 │
 ├── section_4_run_circuits/                # 20% of exam (~13 questions) - LARGEST
 │   ├── README.md                          # Execution theory and hardware concepts
-│   ├── transpilation.ipynb                # Code Lab: Transpiler, optimization
-│   ├── backend_configuration.ipynb        # Code Lab: Backend selection, properties
-│   └── jobs_and_sessions.ipynb            # Code Lab: Job/Batch/Session modes
+│   ├── transpilation.ipynb                # Code Lab: Transpiler, optimization levels
+│   ├── advanced_transpilation.ipynb       # Code Lab: PassManager, custom passes
+│   ├── backend_target.ipynb               # Code Lab: Backend properties, Target
+│   ├── options_configuration.ipynb        # Code Lab: Runtime options configuration
+│   ├── jobs_and_sessions.ipynb            # Code Lab: Job/Batch/Session modes
+│   └── runtime_service.ipynb              # Code Lab: QiskitRuntimeService setup
 │
 ├── section_5_sampler/                     # 13% of exam (~9 questions)
 │   ├── README.md                          # Sampler Primitive theory
@@ -57,30 +65,20 @@ exam_prep/
 │
 ├── section_6_estimator/                   # 13% of exam (~9 questions)
 │   ├── README.md                          # Estimator Primitive theory
-│   └── estimator_primitive.ipynb          # Code Lab: EstimatorV2 API, observables
+│   ├── estimator_primitive.ipynb          # Code Lab: EstimatorV2 API, observables
+│   └── vqe_pattern.ipynb                  # Code Lab: VQE algorithm pattern
 │
 ├── section_7_results/                     # 8% of exam (~5 questions)
 │   ├── README.md                          # Result objects and data extraction
-│   └── result_processing.ipynb            # Code Lab: Counts, bitstrings, metadata
+│   └── result_extraction.ipynb            # Code Lab: Counts, bitstrings, metadata
 │
 ├── section_8_openqasm/                    # 4% of exam (~3 questions)
 │   ├── README.md                          # OpenQASM language fundamentals
-│   └── openqasm_circuits.ipynb            # Code Lab: Import/export QASM
+│   └── openqasm_operations.ipynb          # Code Lab: Import/export QASM
 │
-├── section_9_quantum_info/                # 10% of exam (~7 questions)
-│   ├── README.md                          # Quantum info theory
-│   └── quantum_info_module.ipynb          # Code Lab: Statevector, Operator, DensityMatrix
-│
-└── exam_practice/                         # Section-by-section practice notebooks
-    ├── section_1_practice.ipynb           # Practice: Quantum Operations
-    ├── section_2_practice.ipynb           # Practice: Visualization
-    ├── section_3_practice.ipynb           # Practice: Creating Circuits
-    ├── section_4_practice.ipynb           # Practice: Running Circuits
-    ├── section_5_practice.ipynb           # Practice: Sampler
-    ├── section_6_practice.ipynb           # Practice: Estimator
-    ├── section_7_practice.ipynb           # Practice: Results
-    ├── section_8_practice.ipynb           # Practice: OpenQASM
-    └── section_9_practice.ipynb           # Practice: Quantum Info
+└── section_9_quantum_info/                # 10% of exam (~7 questions)
+    ├── README.md                          # Quantum info theory
+    └── quantum_info_advanced.ipynb        # Code Lab: Statevector, Operator, DensityMatrix
 ```
 
 ---
@@ -94,11 +92,11 @@ exam_prep/
 1. **Clone or download this repository**
 2. **Install required packages**:
    ```bash
-   cd exam_prep
+   cd QiskitCertification
    pip install -r requirements.txt
    ```
 
-The `requirements.txt` file includes:
+The [requirements.txt](requirements.txt) file includes:
 - **Qiskit v2.x**: Core quantum computing framework
 - **qiskit-ibm-runtime**: IBM Quantum runtime primitives (Sampler, Estimator)
 - **matplotlib & pylatexenc**: Circuit and state visualization
@@ -113,6 +111,8 @@ The `requirements.txt` file includes:
    ```
 
 4. **Navigate to any section folder and open the notebooks**
+   - Example: Open [section_1_quantum_operations/single_qubit_gates.ipynb](section_1_quantum_operations/single_qubit_gates.ipynb)
+   - Or start with [COMPREHENSIVE_CIRCUITS_GUIDE.ipynb](COMPREHENSIVE_CIRCUITS_GUIDE.ipynb) for an overview
 
 ### System Requirements
 - Python 3.9 or higher
@@ -143,17 +143,17 @@ Work through interactive Jupyter notebooks to:
 
 **Time**: 30-45 minutes per section
 
-#### **Phase 3: Practice Validation (exam_practice notebooks)**
-Test your understanding with:
-- Section-specific practice questions
-- Exam-style scenarios
-- Self-assessment exercises
+#### **Phase 3: Practice and Application**
+Apply your understanding by:
+- Experimenting with code variations in notebooks
+- Using EXAM_PRACTICE_NOTEBOOK.ipynb for mixed-topic questions
+- Creating your own test circuits and scenarios
 
 **Time**: 20-30 minutes per section
 
 ### 2️⃣ Quick Reference Documents
 
-#### `qiskit_certification_guide.md` (956 lines)
+#### [qiskit_certification_guide.md](qiskit_certification_guide.md) (956 lines)
 **Purpose**: Your comprehensive conceptual reference
 - Complete overview of all 9 certification domains
 - High-level explanations without code
@@ -164,7 +164,7 @@ Test your understanding with:
 - Need to understand "why" before "how"
 - Reviewing concepts before practice exams
 
-#### `KeyTakeAways.md` (3,971 lines)
+#### [KeyTakeAways.md](KeyTakeAways.md) (3,971 lines)
 **Purpose**: Your exam cram sheet and trap detector
 - Distilled essential facts for every topic
 - ⚠️ Highlighted exam traps and gotchas
@@ -177,7 +177,7 @@ Test your understanding with:
 - Identifying knowledge gaps
 - As a checklist: "Have I mastered this?"
 
-#### `COMPREHENSIVE_CIRCUITS_GUIDE.ipynb`
+#### [COMPREHENSIVE_CIRCUITS_GUIDE.ipynb](COMPREHENSIVE_CIRCUITS_GUIDE.ipynb)
 **Purpose**: All-in-one interactive circuit reference
 - Every gate type with working examples
 - Combines material from multiple sections
@@ -188,7 +188,7 @@ Test your understanding with:
 - Need to see all gates side-by-side
 - Prefer single notebook over section folders
 
-#### `EXAM_PRACTICE_NOTEBOOK.ipynb`
+#### [EXAM_PRACTICE_NOTEBOOK.ipynb](EXAM_PRACTICE_NOTEBOOK.ipynb)
 **Purpose**: Mixed-topic practice questions
 - Questions span all 9 sections
 - Simulates real exam randomness
@@ -243,11 +243,11 @@ Test your understanding with:
 
 | Day | Focus | Hours | Activities |
 |-----|-------|-------|------------|
-| **1-2** | Section 1 (Quantum Ops) | 4-5 | README → Code Labs → Practice |
-| **3-4** | Section 4 (Run Circuits) | 5-6 | README → Code Labs → Practice |
+| **1-2** | Section 1 (Quantum Ops) | 4-5 | README → Code Labs → Self-testing |
+| **3-4** | Section 4 (Run Circuits) | 5-6 | README → Code Labs → Experimentation |
 | **5** | Sections 5 & 6 (Primitives) | 6-8 | Both READMEs → Code Labs |
 | **6** | Sections 3, 9 (Circuits, QInfo) | 5-6 | README → Key topics only |
-| **7** | Sections 2, 7, 8 (Quick topics) | 3-4 | Skim READMEs → Practice |
+| **7** | Sections 2, 7, 8 (Quick topics) | 3-4 | Skim READMEs → Code practice |
 | **8-9** | KeyTakeAways.md review | 4-6 | Read all traps, memorize facts |
 | **10** | EXAM_PRACTICE_NOTEBOOK | 2-3 | Simulate exam conditions |
 
@@ -262,7 +262,7 @@ Test your understanding with:
 | **Week 1** | 1, 2, 3 | Fundamentals: Gates, Visualization, Circuit Creation | 10-12 |
 | **Week 2** | 4, 5 | Execution: Running circuits, Sampler primitive | 10-12 |
 | **Week 3** | 6, 7, 8, 9 | Advanced: Estimator, Results, QASM, Quantum Info | 10-12 |
-| **Week 4** | Review & Practice | KeyTakeAways, Practice notebooks, Mock exams | 8-10 |
+| **Week 4** | Review & Practice | KeyTakeAways, EXAM_PRACTICE_NOTEBOOK, Custom problems | 8-10 |
 
 **Total**: ~40-45 hours over 4 weeks
 
@@ -273,7 +273,7 @@ Test your understanding with:
 - **Weeks 1-2**: Deep dive into Sections 1-3 (foundations)
 - **Weeks 3-4**: Master Sections 4-6 (execution and primitives)
 - **Weeks 5-6**: Complete Sections 7-9 (advanced topics)
-- **Weeks 7-8**: Practice, review, mock exams, weak point reinforcement
+- **Weeks 7-8**: Practice, review, EXAM_PRACTICE_NOTEBOOK, weak point reinforcement
 
 **Total**: ~60-80 hours over 8 weeks
 
@@ -282,7 +282,12 @@ Test your understanding with:
 ## 📁 Detailed Section Descriptions
 
 ### Section 1: Quantum Operations (16%)
-**Files**: `single_qubit_gates.ipynb`, `multi_qubit_gates.ipynb`, `state_preparation.ipynb`
+**Location**: [section_1_quantum_operations/](section_1_quantum_operations/)
+**Files**: 
+- [single_qubit_gates.ipynb](section_1_quantum_operations/single_qubit_gates.ipynb)
+- [multi_qubit_gates.ipynb](section_1_quantum_operations/multi_qubit_gates.ipynb)
+- [state_preparation.ipynb](section_1_quantum_operations/state_preparation.ipynb)
+- [README.md](section_1_quantum_operations/README.md)
 
 **What you'll learn**:
 - Single-qubit gates: X, Y, Z (Pauli), H (Hadamard), S, T, P (phase), RX, RY, RZ (rotation)
@@ -307,7 +312,12 @@ Test your understanding with:
 ---
 
 ### Section 2: Visualization (4%)
-**Files**: `circuit_visualization.ipynb`, `state_visualization.ipynb`, `visualization_examples.ipynb`
+**Location**: [section_2_visualization/](section_2_visualization/)
+**Files**: 
+- [circuit_visualization.ipynb](section_2_visualization/circuit_visualization.ipynb)
+- [state_visualization.ipynb](section_2_visualization/state_visualization.ipynb)
+- [visualization_examples.ipynb](section_2_visualization/visualization_examples.ipynb)
+- [README.md](section_2_visualization/README.md)
 
 **What you'll learn**:
 - Circuit drawing: `text`, `mpl` (matplotlib), `latex`
@@ -328,13 +338,22 @@ Test your understanding with:
 ---
 
 ### Section 3: Creating Circuits (12%)
-**Files**: Various circuit construction notebooks
+**Location**: [section_3_create_circuits/](section_3_create_circuits/)
+**Files**:
+- [circuit_basics.ipynb](section_3_create_circuits/circuit_basics.ipynb) - QuantumCircuit fundamentals
+- [circuit_composition.ipynb](section_3_create_circuits/circuit_composition.ipynb) - Composing and combining circuits
+- [parameterized_circuits.ipynb](section_3_create_circuits/parameterized_circuits.ipynb) - Parameter binding and assignment
+- [circuit_library.ipynb](section_3_create_circuits/circuit_library.ipynb) - Standard circuit library
+- [classical_control.ipynb](section_3_create_circuits/classical_control.ipynb) - Classical control flow (if_test)
+- [dynamic_circuits.ipynb](section_3_create_circuits/dynamic_circuits.ipynb) - Mid-circuit measurements
+- [README.md](section_3_create_circuits/README.md)
 
 **What you'll learn**:
 - Building circuits: `QuantumCircuit(n_qubits, n_bits)`
 - Composing circuits: `compose()`, `append()`, `&` operator
 - Circuit manipulation: `inverse()`, `reverse()`, `repeat()`
-- Conditional operations and loops
+- Parameterized circuits and parameter binding
+- Classical control flow and dynamic circuits
 - Barriers and their purposes
 
 **Key exam topics**:
@@ -342,22 +361,33 @@ Test your understanding with:
 - In-place operations (`inplace=True`)
 - Register addressing and naming
 - Circuit depth and gate count
+- Parameter binding syntax
 
 **Common traps**:
 - `compose()` defaults to new circuit (not in-place)
 - `append()` modifies original circuit
 - Barrier doesn't affect quantum state
+- Parameter binding doesn't modify original circuit
 
 ---
 
 ### Section 4: Running Circuits (20%) - LARGEST SECTION
-**Files**: `transpilation.ipynb`, `backend_configuration.ipynb`, `jobs_and_sessions.ipynb`
+**Location**: [section_4_run_circuits/](section_4_run_circuits/)
+**Files**:
+- [transpilation.ipynb](section_4_run_circuits/transpilation.ipynb) - Transpiler basics and optimization levels
+- [advanced_transpilation.ipynb](section_4_run_circuits/advanced_transpilation.ipynb) - PassManager and custom passes
+- [backend_target.ipynb](section_4_run_circuits/backend_target.ipynb) - Backend properties and Target objects
+- [options_configuration.ipynb](section_4_run_circuits/options_configuration.ipynb) - Runtime options configuration
+- [jobs_and_sessions.ipynb](section_4_run_circuits/jobs_and_sessions.ipynb) - Job/Batch/Session execution modes
+- [runtime_service.ipynb](section_4_run_circuits/runtime_service.ipynb) - QiskitRuntimeService setup
+- [README.md](section_4_run_circuits/README.md)
 
 **What you'll learn**:
 - **Transpilation**: Converting circuits for hardware (basis gates, coupling map)
 - **Backend selection**: Choosing simulators vs real hardware
 - **Execution modes**: Job (single), Batch (parallel), Session (iterative)
 - **Optimization levels**: 0-3 and when to use each
+- **Runtime service**: Connecting to IBM Quantum
 - Job management: status, result retrieval, job IDs
 
 **Key exam topics**:
@@ -365,6 +395,7 @@ Test your understanding with:
 - Transpiler optimization levels
 - Backend properties: basis gates, coupling map, noise
 - `mode=` parameter for Sampler/Estimator (v2.x syntax)
+- Target object and backend configuration
 
 **Common traps**:
 - ⚠️ **Session for VQE/QAOA** (feedback loops)
@@ -376,7 +407,10 @@ Test your understanding with:
 ---
 
 ### Section 5: Sampler (13%)
-**Files**: `sampler_primitive.ipynb`
+**Location**: [section_5_sampler/](section_5_sampler/)
+**Files**: 
+- [sampler_primitive.ipynb](section_5_sampler/sampler_primitive.ipynb)
+- [README.md](section_5_sampler/README.md)
 
 **What you'll learn**:
 - **SamplerV2 API**: Running circuits, getting measurement counts
@@ -400,7 +434,11 @@ Test your understanding with:
 ---
 
 ### Section 6: Estimator (13%)
-**Files**: `estimator_primitive.ipynb`
+**Location**: [section_6_estimator/](section_6_estimator/)
+**Files**: 
+- [estimator_primitive.ipynb](section_6_estimator/estimator_primitive.ipynb)
+- [vqe_pattern.ipynb](section_6_estimator/vqe_pattern.ipynb)
+- [README.md](section_6_estimator/README.md)
 
 **What you'll learn**:
 - **EstimatorV2 API**: Computing expectation values
@@ -424,7 +462,10 @@ Test your understanding with:
 ---
 
 ### Section 7: Results (8%)
-**Files**: `result_processing.ipynb`
+**Location**: [section_7_results/](section_7_results/)
+**Files**: 
+- [result_extraction.ipynb](section_7_results/result_extraction.ipynb)
+- [README.md](section_7_results/README.md)
 
 **What you'll learn**:
 - Result object structure: `PrimitiveResult`, `PubResult`, `DataBin`
@@ -446,7 +487,10 @@ Test your understanding with:
 ---
 
 ### Section 8: OpenQASM (4%)
-**Files**: `openqasm_circuits.ipynb`
+**Location**: [section_8_openqasm/](section_8_openqasm/)
+**Files**: 
+- [openqasm_operations.ipynb](section_8_openqasm/openqasm_operations.ipynb)
+- [README.md](section_8_openqasm/README.md)
 
 **What you'll learn**:
 - OpenQASM 3.0 syntax basics
@@ -467,7 +511,10 @@ Test your understanding with:
 ---
 
 ### Section 9: Quantum Info (10%)
-**Files**: `quantum_info_module.ipynb`
+**Location**: [section_9_quantum_info/](section_9_quantum_info/)
+**Files**: 
+- [quantum_info_advanced.ipynb](section_9_quantum_info/quantum_info_advanced.ipynb)
+- [README.md](section_9_quantum_info/README.md)
 
 **What you'll learn**:
 - **Statevector**: Quantum state representation, inner products
@@ -525,9 +572,9 @@ Test your understanding with:
 5. **Practice Timed**: Simulate exam conditions (90 minutes)
 
 ### Day Before Exam
-1. Re-read KeyTakeAways.md (all 3,971 lines!)
-2. Review trap sections in each README.md
-3. Run EXAM_PRACTICE_NOTEBOOK under time pressure
+1. Re-read [KeyTakeAways.md](KeyTakeAways.md) (all 3,971 lines!)
+2. Review trap sections in each section's README.md
+3. Run [EXAM_PRACTICE_NOTEBOOK.ipynb](EXAM_PRACTICE_NOTEBOOK.ipynb) under time pressure
 4. Review V2 API syntax (`mode=`, PUBs, result indexing)
 5. Get good sleep - quantum mechanics is hard enough!
 
@@ -554,15 +601,15 @@ Test your understanding with:
 
 ```
 Study Phase:
-□ Completed all README.md files (concepts)
-□ Worked through all Code Lab notebooks (practice)
-□ Attempted all exam_practice notebooks (validation)
-□ Read KeyTakeAways.md completely (at least once)
-□ Can explain: Job vs Batch vs Session modes
-□ Can explain: Sampler vs Estimator differences
-□ Can explain: Why Z|0⟩ = |0⟩ (phase flip only affects |1⟩)
-□ Can explain: Pauli algebra (XY = iZ, etc.)
-□ Understand V2 API: mode=, PUBs, result indexing
+☐ Completed all README.md files (concepts)
+☐ Worked through all Code Lab notebooks (practice)
+☐ Experimented with code variations and custom scenarios
+☐ Read KeyTakeAways.md completely (at least once)
+☐ Can explain: Job vs Batch vs Session modes
+☐ Can explain: Sampler vs Estimator differences
+☐ Can explain: Why Z|0⟩ = |0⟩ (phase flip only affects |1⟩)
+☐ Can explain: Pauli algebra (XY = iZ, etc.)
+☐ Understand V2 API: mode=, PUBs, result indexing
 
 Technical Setup:
 □ Qiskit v2.x installed and tested
@@ -571,11 +618,11 @@ Technical Setup:
 □ Understand backend selection
 
 Final Review:
-□ KeyTakeAways.md review (all sections)
-□ Trap sections review (all READMEs)
-□ EXAM_PRACTICE_NOTEBOOK completed
-□ Timed practice (90 minutes)
-□ Confidence level: Ready!
+☐ KeyTakeAways.md review (all sections)
+☐ Trap sections review (all section READMEs)
+☐ EXAM_PRACTICE_NOTEBOOK.ipynb completed
+☐ Timed practice (90 minutes)
+☐ Confidence level: Ready!
 ```
 
 ---
@@ -590,7 +637,7 @@ Final Review:
 5. Navigate quantum_info module (Statevector, Operator, Pauli)
 6. Transpile circuits for hardware constraints
 7. Extract and interpret result data correctly
-8. Complete practice exams with 75%+ accuracy
+8. Complete [EXAM_PRACTICE_NOTEBOOK.ipynb](EXAM_PRACTICE_NOTEBOOK.ipynb) with 75%+ accuracy
 
 ---
 
@@ -612,9 +659,9 @@ Final Review:
 ## 🏆 Final Thoughts
 
 The Qiskit certification is challenging but achievable with focused study. These materials are designed to give you:
-- **Conceptual clarity** (README.md files)
+- **Conceptual clarity** (README.md files in each section)
 - **Practical skills** (Code Lab notebooks)
-- **Exam readiness** (KeyTakeAways.md + practice notebooks)
+- **Exam readiness** ([KeyTakeAways.md](KeyTakeAways.md) + [EXAM_PRACTICE_NOTEBOOK.ipynb](EXAM_PRACTICE_NOTEBOOK.ipynb))
 
 Focus on understanding **why**, not just **what**. The exam tests edge cases and traps - knowing concepts deeply helps you spot wrong answers.
 
